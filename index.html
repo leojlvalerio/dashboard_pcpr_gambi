@@ -23,105 +23,30 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
         
-        // --- COMPONENTE MOCK DE ÍCONES ---
         const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                lucide.createIcons();
-            });
+            useEffect(() => { lucide.createIcons(); });
             return <i data-lucide={name} style={{width: size, height: size}} className={className}></i>;
         };
 
-        // --- BIBLIOTECA PADRÃO DE TEMAS ---
         const DEFAULT_TOPICS = {
           penal: {
-            fundamentos: [
-              "Teoria Geral: Aplicação da Lei Penal", "Teoria Geral: Teoria Geral do Crime",
-              "Teoria Geral: Conduta (ação e omissão)", "Teoria Geral: Nexo Causal",
-              "Teoria Geral: Tipicidade", "Teoria Geral: Antijuridicidade e Excludentes",
-              "Teoria Geral: Culpabilidade", "Teoria Geral: Erro de Tipo e Erro de Proibição",
-              "Teoria Geral: Inimputabilidade", "Teoria Geral: Princípio da Insignificância"
-            ],
-            concurso_e_iter: [
-              "Teoria Geral: Concurso de Pessoas", "Teoria Geral: Teorias de Autoria",
-              "Teoria Geral: Iter Criminis", "Teoria Geral: Tentativa",
-              "Teoria Geral: Desistência Voluntária e Arrependimento eficaz",
-              "Teoria Geral: Arrependimento Posterior"
-            ],
-            pena_e_prescricao: [
-              "Penas: Teoria da Pena", "Penas: Espécies de Penas",
-              "Penas: Regimes e Substituição", "Penas: Concurso de Crimes", "Penas: Prescrição"
-            ],
-            pessoa: [
-              "Crimes contra a Pessoa: Homicídio", "Crimes contra a Pessoa: Lesões Corporais",
-              "Crimes contra a Pessoa: Crimes contra a Honra", "Crimes contra a Pessoa: Aborto",
-              "Crimes contra a Pessoa: Omissão de Socorro"
-            ],
-            patrimonio: [
-              "Crimes contra o Patrimônio: Furto", "Crimes contra o Patrimônio: Roubo",
-              "Crimes contra o Patrimônio: Extorsão", "Crimes contra o Patrimônio: Estelionato",
-              "Crimes contra o Patrimônio: Receptação", "Crimes contra o Patrimônio: Dano"
-            ],
-            dignidade: [
-              "Crimes contra a Dignidade Sexual: Estupro", "Crimes contra a Dignidade Sexual: Assédio Sexual"
-            ],
-            administracao: [
-              "Crimes contra a Administração: Peculato", "Crimes contra a Administração: Corrupção Passiva",
-              "Crimes contra a Administração: Concussão", "Crimes contra a Administração: Prevaricação",
-              "Crimes contra a Administração: Resistência e Desobediência"
-            ]
+            fundamentos: ["Teoria Geral: Aplicação da Lei Penal", "Teoria Geral: Teoria Geral do Crime", "Teoria Geral: Conduta (ação e omissão)", "Teoria Geral: Nexo Causal", "Teoria Geral: Tipicidade", "Teoria Geral: Antijuridicidade e Excludentes", "Teoria Geral: Culpabilidade", "Teoria Geral: Erro de Tipo e Erro de Proibição", "Teoria Geral: Inimputabilidade", "Teoria Geral: Princípio da Insignificância"],
+            concurso_e_iter: ["Teoria Geral: Concurso de Pessoas", "Teoria Geral: Teorias de Autoria", "Teoria Geral: Iter Criminis", "Teoria Geral: Tentativa", "Teoria Geral: Desistência Voluntária e Arrependimento eficaz", "Teoria Geral: Arrependimento Posterior"],
+            pena_e_prescricao: ["Penas: Teoria da Pena", "Penas: Espécies de Penas", "Penas: Regimes e Substituição", "Penas: Concurso de Crimes", "Penas: Prescrição"],
+            pessoa: ["Crimes contra a Pessoa: Homicídio", "Crimes contra a Pessoa: Lesões Corporais", "Crimes contra a Pessoa: Crimes contra a Honra", "Crimes contra a Pessoa: Aborto", "Crimes contra a Pessoa: Omissão de Socorro"],
+            patrimonio: ["Crimes contra o Patrimônio: Furto", "Crimes contra o Patrimônio: Roubo", "Crimes contra o Patrimônio: Extorsão", "Crimes contra o Patrimônio: Estelionato", "Crimes contra o Patrimônio: Receptação", "Crimes contra o Patrimônio: Dano"],
+            dignidade: ["Crimes contra a Dignidade Sexual: Estupro", "Crimes contra a Dignidade Sexual: Assédio Sexual"],
+            administracao: ["Crimes contra a Administração: Peculato", "Crimes contra a Administração: Corrupção Passiva", "Crimes contra a Administração: Concussão", "Crimes contra a Administração: Prevaricação", "Crimes contra a Administração: Resistência e Desobediência"]
           },
-          'proc-penal': {
-            geral: [
-              "Inquérito Policial", "Notitia Criminis", "Instauração do Inquérito", "Relatório e Arquivamento", "BO, TCO e IP",
-              "Ação Penal", "Decadência e Perempção", "Pedido de Explicações", "Competência", "Conexão e Continência",
-              "Provas", "Motivação per relationem", "Prisões", "Medidas Cautelares", "Liberdade Provisória",
-              "Procedimento Comum", "Ritos Processuais", "Fases do Processo", "Nulidades", "Incidente de Insanidade Mental",
-              "Recursos", "Juiz das Garantias", "ANPP e Justiça Penal Consensual"
-            ]
-          },
-          const: {
-            geral: [
-              "Direitos Fundamentais", "Direitos dos Presos", "Mandados de Criminalização", "Dignidade da Pessoa Humana",
-              "Organização do Estado", "Competências Federativas", "Segurança Pública",
-              "Processo Legislativo", "Controle de Constitucionalidade", "Controle por Omissão",
-              "Poder Constituinte", "Imunidades Parlamentares", "Crime de Responsabilidade", "Intervenção Federal", "Competências STF e STJ"
-            ]
-          },
-          adm: {
-            geral: [
-              "Atos Administrativos", "Anulação e Revogação", "Controle Judicial",
-              "Agentes Públicos", "Regime Jurídico", "Estabilidade", "Provimento e Vacância", "Direitos e Vantagens",
-              "Responsabilidade Civil do Estado", "Risco Administrativo",
-              "Organização Administrativa", "Administração Direta e Indireta", "Autarquias",
-              "Licitações", "Lei 14.133", "Improbidade Administrativa",
-              "Poder Hierárquico", "Poder Disciplinar", "Poder de Polícia", "Serviços Públicos",
-              "Concessões", "Empresas Estatais", "PAD", "Nepotismo"
-            ]
-          },
-          'leg-especial': {
-            geral: [
-              "Lei Maria da Penha", "Medidas Protetivas",
-              "Lei de Drogas", "Tráfico e Uso", "Lei de Organizações Criminosas", "Colaboração Premiada", "Infiltração de Agentes",
-              "Lei de Abuso de Autoridade", "Pacote Anticrime", "Cadeia de Custódia", "ANPP", "Prisão Temporária",
-              "Estatuto do Desarmamento", "Crimes Ambientais", "Interceptação Telefônica", "Juizados Especiais Criminais",
-              "Lavagem de Dinheiro", "Crimes Tributários", "Lei de Racismo", "Embriaguez ao Volante"
-            ]
-          },
-          civil: {
-            geral: ["LINDB", "Pessoas", "Capacidade Civil", "Emancipação", "Bens", "Classificação de Bens", "Posse", "Propriedade", "Desforço Imediato", "Fatos Jurídicos", "Negócio Jurídico", "Autonomia da Vontade", "Disposição do Corpo"]
-          },
-          dh: {
-            geral: ["Teoria Geral dos Direitos Humanos", "Declaração Universal", "Pactos Internacionais", "Convenção contra a Tortura", "Princípios Estruturantes", "Status dos Tratados", "Sistema Interamericano", "Responsabilidade Internacional do Estado"]
-          },
-          crim: {
-            geral: ["Escolas Criminológicas", "Escola Clássica", "Escola Positivista", "Teorias Sociológicas", "Anomia", "Subculturas Criminais", "Técnicas de Neutralização", "Labelling Approach", "Direito Penal do Inimigo", "Janelas Quebradas", "Atuarialismo", "Discursos Punitivos", "Vitimologia", "Prevenção Criminal"]
-          },
-          med: {
-            geral: ["Medicina Legal — Conceito", "Perícia e Laudos", "Tanatologia", "Sinais Cadavéricos", "Estimativa do Tempo de Morte", "Traumatologia", "Lesões Corporais", "Balística Médico-Legal", "Docimásias", "Identificação Humana", "Dactiloscopia"]
-          },
-          inf: {
-            geral: ["Sistemas Operativos", "Linux (Ubuntu)", "Gestão de Arquivos", "Redes", "SMB e Compartilhamento", "LibreOffice Writer", "LibreOffice Calc", "Funções Básicas", "Navegadores", "Navegação Privada", "Segurança Básica"]
-          }
+          'proc-penal': { geral: ["Inquérito Policial", "Notitia Criminis", "Instauração do Inquérito", "Relatório e Arquivamento", "BO, TCO e IP", "Ação Penal", "Decadência e Perempção", "Pedido de Explicações", "Competência", "Conexão e Continência", "Provas", "Motivação per relationem", "Prisões", "Medidas Cautelares", "Liberdade Provisória", "Procedimento Comum", "Ritos Processuais", "Fases do Processo", "Nulidades", "Incidente de Insanidade Mental", "Recursos", "Juiz das Garantias", "ANPP e Justiça Penal Consensual"] },
+          const: { geral: ["Direitos Fundamentais", "Direitos dos Presos", "Mandados de Criminalização", "Dignidade da Pessoa Humana", "Organização do Estado", "Competências Federativas", "Segurança Pública", "Processo Legislativo", "Controle de Constitucionalidade", "Controle por Omissão", "Poder Constituinte", "Imunidades Parlamentares", "Crime de Responsabilidade", "Intervenção Federal", "Competências STF e STJ"] },
+          adm: { geral: ["Atos Administrativos", "Anulação e Revogação", "Controle Judicial", "Agentes Públicos", "Regime Jurídico", "Estabilidade", "Provimento e Vacância", "Direitos e Vantagens", "Responsabilidade Civil do Estado", "Risco Administrativo", "Organização Administrativa", "Administração Direta e Indireta", "Autarquias", "Licitações", "Lei 14.133", "Improbidade Administrativa", "Poder Hierárquico", "Poder Disciplinar", "Poder de Polícia", "Serviços Públicos", "Concessões", "Empresas Estatais", "PAD", "Nepotismo"] },
+          'leg-especial': { geral: ["Lei Maria da Penha", "Medidas Protetivas", "Lei de Drogas", "Tráfico e Uso", "Lei de Organizações Criminosas", "Colaboração Premiada", "Infiltração de Agentes", "Lei de Abuso de Autoridade", "Pacote Anticrime", "Cadeia de Custódia", "ANPP", "Prisão Temporária", "Estatuto do Desarmamento", "Crimes Ambientais", "Interceptação Telefônica", "Juizados Especiais Criminais", "Lavagem de Dinheiro", "Crimes Tributários", "Lei de Racismo", "Embriaguez ao Volante"] },
+          civil: { geral: ["LINDB", "Pessoas", "Capacidade Civil", "Emancipação", "Bens", "Classificação de Bens", "Posse", "Propriedade", "Desforço Imediato", "Fatos Jurídicos", "Negócio Jurídico", "Autonomia da Vontade", "Disposição do Corpo"] },
+          dh: { geral: ["Teoria Geral dos Direitos Humanos", "Declaração Universal", "Pactos Internacionais", "Convenção contra a Tortura", "Princípios Estruturantes", "Status dos Tratados", "Sistema Interamericano", "Responsabilidade Internacional do Estado"] },
+          crim: { geral: ["Escolas Criminológicas", "Escola Clássica", "Escola Positivista", "Teorias Sociológicas", "Anomia", "Subculturas Criminais", "Técnicas de Neutralização", "Labelling Approach", "Direito Penal do Inimigo", "Janelas Quebradas", "Atuarialismo", "Discursos Punitivos", "Vitimologia", "Prevenção Criminal"] },
+          med: { geral: ["Medicina Legal — Conceito", "Perícia e Laudos", "Tanatologia", "Sinais Cadavéricos", "Estimativa do Tempo de Morte", "Traumatologia", "Lesões Corporais", "Balística Médico-Legal", "Docimásias", "Identificação Humana", "Dactiloscopia"] },
+          inf: { geral: ["Sistemas Operativos", "Linux (Ubuntu)", "Gestão de Arquivos", "Redes", "SMB e Compartilhamento", "LibreOffice Writer", "LibreOffice Calc", "Funções Básicas", "Navegadores", "Navegação Privada", "Segurança Básica"] }
         };
 
         const INITIAL_SUBJECTS = [
@@ -138,69 +63,44 @@
         ];
 
         function App() {
-          // --- ESTADOS ---
           const [subjects, setSubjects] = useState(() => {
-            try {
-              const saved = localStorage.getItem('pcpr_study_v27_data');
-              return saved ? JSON.parse(saved) : INITIAL_SUBJECTS;
-            } catch (e) { return INITIAL_SUBJECTS; }
+            try { const saved = localStorage.getItem('pcpr_study_v27_data'); return saved ? JSON.parse(saved) : INITIAL_SUBJECTS; } 
+            catch (e) { return INITIAL_SUBJECTS; }
           });
-
           const [availableTime, setAvailableTime] = useState(() => {
-            try {
-              const saved = localStorage.getItem('pcpr_study_v27_meta');
-              return saved ? Number(saved) : 100;
-            } catch (e) { return 100; }
+            try { const saved = localStorage.getItem('pcpr_study_v27_meta'); return saved ? Number(saved) : 100; } 
+            catch (e) { return 100; }
           });
-
           const [cycleSequence, setCycleSequence] = useState(() => {
-            try {
-              const saved = localStorage.getItem('pcpr_study_v27_cycle');
-              return saved ? JSON.parse(saved) : [];
-            } catch (e) { return []; }
+            try { const saved = localStorage.getItem('pcpr_study_v27_cycle'); return saved ? JSON.parse(saved) : []; } 
+            catch (e) { return []; }
           });
-
           const [currentCycleIndex, setCurrentCycleIndex] = useState(() => {
-            try {
-              const saved = localStorage.getItem('pcpr_study_v27_idx');
-              return saved ? Number(saved) : 0;
-            } catch (e) { return 0; }
+            try { const saved = localStorage.getItem('pcpr_study_v27_idx'); return saved ? Number(saved) : 0; } 
+            catch (e) { return 0; }
           });
 
           const [activeTab, setActiveTab] = useState('geral');
           const [selectedSubId, setSelectedSubId] = useState(null);
           const [activeModal, setActiveModal] = useState(null);
           const [showFutureRevisions, setShowFutureRevisions] = useState(false);
-          const [revFilterType, setRevFilterType] = useState('all'); // Filtro por tipo de revisão
-         
+          const [revFilterType, setRevFilterType] = useState('all');
           const [isAddingTopic, setIsAddingTopic] = useState(false);
           const [newTopicName, setNewTopicName] = useState('');
           const [logToDeleteId, setLogToDeleteId] = useState(null);
           const [confirmModalData, setConfirmModalData] = useState(null);
-         
           const [revForms, setRevForms] = useState({});
-          const [form, setForm] = useState({ 
-            topic: '', 
-            time: 0, 
-            q: 0, 
-            h: 0, 
-            nextRev: '', 
-            isRevision: false, 
-            nextRevType: 'completa',
-            studyDate: new Date().toISOString().split('T')[0]
-          });
+          const [form, setForm] = useState({ topic: '', time: 0, q: 0, h: 0, nextRev: '', isRevision: false, nextRevType: 'completa', studyDate: new Date().toISOString().split('T')[0] });
 
-          // --- PERSISTÊNCIA ---
           useEffect(() => {
             try {
               localStorage.setItem('pcpr_study_v27_data', JSON.stringify(subjects));
               localStorage.setItem('pcpr_study_v27_meta', availableTime.toString());
               localStorage.setItem('pcpr_study_v27_cycle', JSON.stringify(cycleSequence));
               localStorage.setItem('pcpr_study_v27_idx', currentCycleIndex.toString());
-            } catch (e) { console.error("Erro ao guardar dados"); }
+            } catch (e) { console.error("Erro ao guardar"); }
           }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
 
-          // --- FUNÇÕES AUXILIARES ---
           const flattenTopics = (subjectId) => {
             const data = DEFAULT_TOPICS[subjectId];
             if (!data) return [];
@@ -208,14 +108,11 @@
             return Object.values(data).flat();
           };
 
-          // --- CÁLCULOS ---
           const stats = useMemo(() => {
             let qTotal = 0, hTotal = 0, totalHoursStudied = 0;
             subjects.forEach(s => {
               (s.logs || []).forEach(l => {
-                qTotal += (Number(l.q) || 0);
-                hTotal += (Number(l.h) || 0);
-                totalHoursStudied += ((Number(l.time) || 0) / 60);
+                qTotal += (Number(l.q) || 0); hTotal += (Number(l.h) || 0); totalHoursStudied += ((Number(l.time) || 0) / 60);
               });
             });
             const weightSum = subjects.reduce((acc, s) => acc + (Number(s.weight) || 0), 0);
@@ -229,28 +126,17 @@
               const h = (s.logs || []).reduce((acc, l) => acc + (Number(l.h) || 0), 0);
               const totalStudyHours = (s.logs || []).reduce((acc, l) => acc + (Number(l.time) || 0), 0) / 60;
               const timeRemaining = Math.max(0, sSuggested - totalStudyHours);
-
               const allTopics = [...flattenTopics(s.id), ...(s.customTopics || [])];
               const studiedTopics = new Set((s.logs || []).map(l => l.topic));
               const unstudiedCount = allTopics.filter(t => !studiedTopics.has(t)).length;
 
-              return {
-                ...s,
-                suggested: sSuggested,
-                perf: q > 0 ? Math.round((h/q)*100) : 0,
-                totalQ: q,
-                totalH: h,
-                totalStudyHours,
-                timeRemaining,
-                unstudiedCount
-              };
+              return { ...s, suggested: sSuggested, perf: q > 0 ? Math.round((h/q)*100) : 0, totalQ: q, totalH: h, totalStudyHours, timeRemaining, unstudiedCount };
             });
           }, [subjects, stats.weightSum, availableTime]);
 
           const revisionList = useMemo(() => {
             const list = [];
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = new Date(); today.setHours(0, 0, 0, 0);
 
             subjects.forEach(s => {
               const latestPerTopic = {};
@@ -280,7 +166,6 @@
             if (!selectedSubId) return [];
             const sub = subjects.find(s => s.id === selectedSubId);
             if (!sub) return [];
-
             const allTopicNames = [...flattenTopics(selectedSubId), ...(sub.customTopics || [])];
             const statsMap = {};
             allTopicNames.forEach(t => { statsMap[String(t)] = { topic: String(t), time: 0, q: 0, h: 0 }; });
@@ -292,11 +177,9 @@
                 statsMap[String(log.topic)].h += Number(log.h) || 0;
               }
             });
-
             return Object.values(statsMap).sort((a, b) => String(a.topic).localeCompare(String(b.topic)));
           }, [subjects, selectedSubId]);
 
-          // --- AÇÕES ---
           const handleAddSubject = (name) => {
             if (!name?.trim()) return;
             const newId = `custom-${Date.now()}`;
@@ -305,22 +188,12 @@
           };
 
           const handleReset = () => {
-            setSubjects(prev => prev.map(s => ({
-              ...s,
-              notes: '',
-              logs: [],
-              history: []
-            })));
-            setAvailableTime(100);
-            setCycleSequence([]);
-            setCurrentCycleIndex(0);
-            setActiveModal(null);
-            setActiveTab('geral');
+            setSubjects(prev => prev.map(s => ({ ...s, notes: '', logs: [], history: [] })));
+            setAvailableTime(100); setCycleSequence([]); setCurrentCycleIndex(0); setActiveModal(null); setActiveTab('geral');
           };
 
           const handleDeleteSubject = (id) => {
-            setSubjects(subjects.filter(s => s.id !== id));
-            setCycleSequence(cycleSequence.filter(sid => sid !== id));
+            setSubjects(subjects.filter(s => s.id !== id)); setCycleSequence(cycleSequence.filter(sid => sid !== id));
             if (selectedSubId === id) setSelectedSubId(null);
           };
 
@@ -330,8 +203,7 @@
 
           const handleDeleteLog = (subjectId, logId) => {
             setSubjects(prev => prev.map(s => {
-              if (s.id === subjectId) return { ...s, logs: (s.logs || []).filter(l => l.id !== logId) };
-              return s;
+              if (s.id === subjectId) return { ...s, logs: (s.logs || []).filter(l => l.id !== logId) }; return s;
             }));
             setLogToDeleteId(null);
           };
@@ -339,102 +211,57 @@
           const handleSaveTopic = () => {
             if (!newTopicName?.trim()) { setIsAddingTopic(false); return; }
             setSubjects(prev => prev.map(s => {
-              if (s.id === selectedSubId) return { ...s, customTopics: [...(s.customTopics || []), newTopicName.trim()] };
-              return s;
+              if (s.id === selectedSubId) return { ...s, customTopics: [...(s.customTopics || []), newTopicName.trim()] }; return s;
             }));
-            setNewTopicName('');
-            setIsAddingTopic(false);
+            setNewTopicName(''); setIsAddingTopic(false);
           };
 
           const handleRemoveTopic = () => {
             if (!form.topic) return;
-            const isDefault = flattenTopics(selectedSubId).includes(form.topic);
-            if (isDefault) return;
+            if (flattenTopics(selectedSubId).includes(form.topic)) return;
             setSubjects(prev => prev.map(s => {
-              if (s.id === selectedSubId) return { ...s, customTopics: (s.customTopics || []).filter(t => t !== form.topic) };
-              return s;
+              if (s.id === selectedSubId) return { ...s, customTopics: (s.customTopics || []).filter(t => t !== form.topic) }; return s;
             }));
             setForm({ ...form, topic: '' });
           };
 
           const moveCycleItem = (index, direction) => {
-            const newSeq = [...cycleSequence];
-            const target = index + direction;
+            const newSeq = [...cycleSequence]; const target = index + direction;
             if (target < 0 || target >= newSeq.length) return;
-            [newSeq[index], newSeq[target]] = [newSeq[target], newSeq[index]];
-            setCycleSequence(newSeq);
+            [newSeq[index], newSeq[target]] = [newSeq[target], newSeq[index]]; setCycleSequence(newSeq);
           };
 
           const registerSession = (id, sessionData = null, bypass = false) => {
             const finalData = sessionData || form;
             if (!finalData.topic) return;
-
-            // Verificação de campos vazios para mostrar o modal de confirmação
             const isMissingData = !finalData.time || !finalData.nextRev || (!finalData.q && finalData.q !== 0);
-            
-            if (!bypass && isMissingData) {
-              setConfirmModalData({ id, sessionData });
-              return;
-            }
+            if (!bypass && isMissingData) { setConfirmModalData({ id, sessionData }); return; }
 
             setSubjects(prev => prev.map(s => {
               if (s.id === id) {
                 const studyDateObj = new Date(finalData.studyDate + 'T12:00:00');
                 const newLog = {
-                  id: Date.now(),
-                  topic: finalData.topic,
-                  time: Number(finalData.time) || 0,
-                  q: Number(finalData.q) || 0,
-                  h: Number(finalData.h) || 0,
-                  isRevision: finalData.isRevision,
-                  nextRevType: finalData.nextRevType || 'completa',
-                  timestamp: Date.now(),
-                  date: studyDateObj.toLocaleDateString('pt-BR'),
-                  nextRev: finalData.nextRev || ''
+                  id: Date.now(), topic: finalData.topic, time: Number(finalData.time) || 0, q: Number(finalData.q) || 0,
+                  h: Number(finalData.h) || 0, isRevision: finalData.isRevision, nextRevType: finalData.nextRevType || 'completa',
+                  timestamp: Date.now(), date: studyDateObj.toLocaleDateString('pt-BR'), nextRev: finalData.nextRev || ''
                 };
                 const accuracy = newLog.q > 0 ? (newLog.h / newLog.q) * 100 : 0;
-                return { 
-                    ...s, 
-                    logs: [newLog, ...(s.logs || [])], 
-                    history: [...(s.history || []), { date: newLog.date, accuracy: Math.round(accuracy), topic: newLog.topic }].slice(-30) 
-                };
+                return { ...s, logs: [newLog, ...(s.logs || [])], history: [...(s.history || []), { date: newLog.date, accuracy: Math.round(accuracy), topic: newLog.topic }].slice(-30) };
               }
               return s;
             }));
             if (cycleSequence[currentCycleIndex] === id) setCurrentCycleIndex(prev => (prev + 1) % (cycleSequence.length || 1));
-            if (!sessionData) setForm({ 
-                topic: '', 
-                time: 0, 
-                q: 0, 
-                h: 0, 
-                nextRev: '', 
-                isRevision: false, 
-                nextRevType: 'completa',
-                studyDate: new Date().toISOString().split('T')[0]
-            });
+            if (!sessionData) setForm({ topic: '', time: 0, q: 0, h: 0, nextRev: '', isRevision: false, nextRevType: 'completa', studyDate: new Date().toISOString().split('T')[0] });
             setConfirmModalData(null);
           };
 
           const updateRevQuickForm = (revId, field, value) => {
-            setRevForms(prev => ({
-              ...prev,
-              [revId]: { ...(prev[revId] || { time: 0, q: 0, h: 0, nextRev: '', nextRevType: 'completa' }), [field]: value }
-            }));
+            setRevForms(prev => ({ ...prev, [revId]: { ...(prev[revId] || { time: 0, q: 0, h: 0, nextRev: '', nextRevType: 'completa' }), [field]: value } }));
           };
 
           const handleQuickRevisionSave = (rev) => {
-            const data = revForms[rev.id];
-            if (!data) return;
-            registerSession(rev.subjectId, {
-              topic: rev.topic,
-              time: data.time || 0,
-              q: data.q || 0,
-              h: data.h || 0,
-              isRevision: true,
-              nextRev: data.nextRev || '',
-              nextRevType: data.nextRevType || 'completa',
-              studyDate: new Date().toISOString().split('T')[0]
-            });
+            const data = revForms[rev.id]; if (!data) return;
+            registerSession(rev.subjectId, { topic: rev.topic, time: data.time || 0, q: data.q || 0, h: data.h || 0, isRevision: true, nextRev: data.nextRev || '', nextRevType: data.nextRevType || 'completa', studyDate: new Date().toISOString().split('T')[0] });
             setRevForms(prev => { const next = {...prev}; delete next[rev.id]; return next; });
           };
 
@@ -442,10 +269,7 @@
             const data = { subjects, availableTime, cycleSequence, currentCycleIndex, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `backup_pcpr_v27.json`;
-            link.click();
+            const link = document.createElement('a'); link.href = url; link.download = `backup_pcpr_v27.json`; link.click();
             URL.revokeObjectURL(url);
           };
 
@@ -454,8 +278,6 @@
 
           return (
             <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans relative overflow-hidden">
-             
-              {/* MODAIS */}
               {activeModal === 'add' && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
                   <div className="bg-white rounded-[32px] p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
@@ -472,9 +294,7 @@
               {activeModal === 'reset' && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
                   <div className="bg-white rounded-[32px] p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
-                    <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Icon name="alert-triangle" className="text-red-600" size={40} />
-                    </div>
+                    <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="alert-triangle" className="text-red-600" size={40} /></div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-center">Zerar Tudo?</h3>
                     <p className="text-slate-500 text-center mb-10 font-medium text-sm leading-relaxed">Esta ação apaga apenas os seus registros, histórico e notas.</p>
                     <div className="flex gap-4">
@@ -488,9 +308,7 @@
               {confirmModalData && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
                   <div className="bg-white rounded-[32px] p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200 text-center">
-                    <div className="bg-amber-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Icon name="info" className="text-amber-600" size={40} />
-                    </div>
+                    <div className="bg-amber-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"><Icon name="info" className="text-amber-600" size={40} /></div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter mb-4">Dados Incompletos</h3>
                     <p className="text-slate-500 mb-10 font-medium text-sm leading-relaxed">Alguns campos de tempo, questões ou revisão estão vazios. Deseja registrar mesmo assim?</p>
                     <div className="flex gap-4">
@@ -501,16 +319,13 @@
                 </div>
               )}
 
-              {/* SIDEBAR */}
               <aside className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto max-h-screen">
                 <div className="p-8 border-b border-slate-100 flex items-center gap-4">
                   <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg"><Icon name="target" size={24} /></div>
                   <div><h1 className="font-black text-xl text-blue-600 uppercase leading-none tracking-tighter">PCPR Pro</h1><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Delegado V27</p></div>
                 </div>
                 <nav className="p-4 space-y-2">
-                  <button onClick={() => setActiveTab('geral')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl transition-all cursor-pointer ${activeTab === 'geral' ? 'bg-blue-600 text-white shadow-xl font-bold' : 'hover:bg-slate-50 text-slate-500'}`}>
-                    <Icon name="layout-dashboard" size={20} /> <span className="text-sm">Painel de Controle</span>
-                  </button>
+                  <button onClick={() => setActiveTab('geral')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl transition-all cursor-pointer ${activeTab === 'geral' ? 'bg-blue-600 text-white shadow-xl font-bold' : 'hover:bg-slate-50 text-slate-500'}`}><Icon name="layout-dashboard" size={20} /> <span className="text-sm">Painel de Controle</span></button>
                   <button onClick={() => setActiveTab('revisoes')} className={`w-full flex items-center gap-3 px-5 py-4 rounded-2xl transition-all cursor-pointer ${activeTab === 'revisoes' ? 'bg-amber-500 text-white shadow-xl font-bold' : 'hover:bg-slate-50 text-slate-500'}`}>
                     <Icon name="clock" size={20} /> <span className="text-sm">Revisões Pendentes</span>
                     {revisionList.filter(r => r.daysLeft <= 0).length > 0 && <span className="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">{revisionList.filter(r => r.daysLeft <= 0).length}</span>}
@@ -518,56 +333,39 @@
                   <div className="pt-6 pb-2 px-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Suas Disciplinas</div>
                   {subjects.map(s => (
                     <button key={s.id} onClick={() => { setSelectedSubId(s.id); setActiveTab('materia'); }} className={`w-full text-left px-5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${selectedSubId === s.id && activeTab === 'materia' ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'text-slate-500 hover:bg-slate-50 border-l-4 border-transparent'}`}>
-                      <span className="truncate pr-2">{String(s.name)}</span>
-                      {cycleSequence[currentCycleIndex] === s.id && <Icon name="zap" size={12} className="text-amber-500" />}
+                      <span className="truncate pr-2">{String(s.name)}</span>{cycleSequence[currentCycleIndex] === s.id && <Icon name="zap" size={12} className="text-amber-500" />}
                     </button>
                   ))}
                 </nav>
               </aside>
 
-              {/* MAIN CONTENT */}
               <main className="flex-1 p-6 md:p-12 overflow-y-auto bg-slate-50">
                 {activeTab === 'geral' && (
                   <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20">
-                    {/* CARDS SUPERIORES */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                       <div className="bg-blue-600 p-8 rounded-[40px] text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden group min-h-[180px]">
                         <Icon name="history" className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform z-0" size={160} />
                         <div className="relative z-10 h-full flex flex-col justify-center text-center md:text-left">
                           <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Meta Total (Edital)</p>
                           <div className="flex items-center justify-center md:justify-start gap-4 mt-6">
-                            <div className="flex items-baseline gap-1">
-                              <input
-                                type="number"
-                                value={availableTime || ''}
-                                onChange={e => setAvailableTime(Number(e.target.value))}
-                                className="bg-transparent text-5xl font-black w-32 text-center md:text-left outline-none border-b-2 border-blue-400/50 focus:border-white transition-colors"
-                                placeholder="0"
-                              />
-                              <span className="text-xl font-bold opacity-60 italic">h</span>
-                            </div>
+                            <div className="flex items-baseline gap-1"><input type="number" value={availableTime || ''} onChange={e => setAvailableTime(Number(e.target.value))} className="bg-transparent text-5xl font-black w-32 text-center md:text-left outline-none border-b-2 border-blue-400/50 focus:border-white transition-colors" placeholder="0" /><span className="text-xl font-bold opacity-60 italic">h</span></div>
                           </div>
                         </div>
                       </div>
-                     
                       <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm flex flex-col justify-between">
                         <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Estudado</p><p className="text-5xl font-black mt-2 text-slate-800">{stats.totalHoursStudied.toFixed(1)}h</p></div>
                         <div className="w-full h-2.5 bg-slate-100 rounded-full mt-6 overflow-hidden"><div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${Math.min((stats.totalHoursStudied / (availableTime || 1)) * 100, 100)}%` }} /></div>
                       </div>
                       <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm flex flex-col justify-center text-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Aproveitamento Global</p>
-                        <p className="text-5xl font-black text-green-600 tracking-tighter">{Math.round(stats.accuracy)}%</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-widest">{stats.hTotal} / {stats.qTotal} questões</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Aproveitamento Global</p><p className="text-5xl font-black text-green-600 tracking-tighter">{Math.round(stats.accuracy)}%</p><p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-widest">{stats.hTotal} / {stats.qTotal} questões</p>
                       </div>
                     </div>
 
-                    {/* SEQUENCIADOR DO CICLO */}
                     <section className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                         <div className="space-y-1"><h3 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3"><Icon name="refresh-cw" size={28} className="text-blue-600" /> Sequenciador do Ciclo</h3><p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Sua fila estratégica de estudos</p></div>
                         <select className="bg-slate-100 p-5 rounded-2xl text-xs font-black uppercase outline-none focus:ring-2 ring-blue-500 min-w-[200px]" onChange={e => { if(e.target.value) { setCycleSequence([...cycleSequence, e.target.value]); e.target.value=""; } }}>
-                          <option value="">+ Incluir na Fila</option>
-                          {subjects.map(s => <option key={s.id} value={s.id}>{String(s.name)}</option>)}
+                          <option value="">+ Incluir na Fila</option>{subjects.map(s => <option key={s.id} value={s.id}>{String(s.name)}</option>)}
                         </select>
                       </div>
                       <div className="flex flex-wrap gap-6">
@@ -580,8 +378,7 @@
                             <div key={idx} className={`relative flex items-center gap-6 p-7 rounded-[32px] border transition-all flex-1 min-w-[260px] max-w-[320px] ${active ? 'bg-gradient-to-br from-blue-600 to-indigo-800 border-blue-400 text-white shadow-2xl scale-105' : 'bg-white border-slate-100'}`}>
                               <div className="flex flex-col gap-2 opacity-60"><button onClick={() => moveCycleItem(idx, -1)} className="p-1 hover:bg-white/20 rounded cursor-pointer"><Icon name="arrow-up" size={14}/></button><button onClick={() => moveCycleItem(idx, 1)} className="p-1 hover:bg-white/20 rounded cursor-pointer"><Icon name="arrow-down" size={14}/></button></div>
                               <div className="flex-1 overflow-hidden">
-                                <p className={`text-[9px] font-black uppercase mb-1.5 ${active ? 'text-blue-200' : 'text-slate-400'}`}>Etapa {idx + 1}</p>
-                                <h4 className="text-base font-black truncate leading-tight mb-2">{String(sub.name)}</h4>
+                                <p className={`text-[9px] font-black uppercase mb-1.5 ${active ? 'text-blue-200' : 'text-slate-400'}`}>Etapa {idx + 1}</p><h4 className="text-base font-black truncate leading-tight mb-2">{String(sub.name)}</h4>
                                 <div className="w-full h-1.5 bg-slate-100/20 rounded-full overflow-hidden"><div className={`h-full ${active ? 'bg-white' : 'bg-blue-500'}`} style={{ width: `${Math.min((mData?.totalStudyHours / (mData?.suggested || 0.1)) * 100, 100)}%` }} /></div>
                               </div>
                               <div className="flex gap-2">
@@ -594,34 +391,18 @@
                       </div>
                     </section>
 
-                    {/* TABELA DE DESEMPENHO */}
                     <section className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm overflow-hidden">
                       <h3 className="text-3xl font-black uppercase tracking-tighter mb-10 flex items-center gap-3"><Icon name="bar-chart-3" className="text-blue-600" size={28} /> Desempenho</h3>
                       <div className="overflow-x-auto">
                         <table className="w-full text-left">
                           <thead className="text-[10px] font-black text-slate-400 uppercase border-b border-slate-100">
-                            <tr>
-                              <th className="pb-6 pr-4">Disciplina</th>
-                              <th className="pb-6 text-center">Aproveitamento</th>
-                              <th className="pb-6 text-center">Meta Proporcional</th>
-                              <th className="pb-6 text-center">Já Estudado</th>
-                              <th className="pb-6 text-right">Tempo Pendente</th>
-                            </tr>
+                            <tr><th className="pb-6 pr-4">Disciplina</th><th className="pb-6 text-center">Aproveitamento</th><th className="pb-6 text-center">Meta Proporcional</th><th className="pb-6 text-center">Já Estudado</th><th className="pb-6 text-right">Tempo Pendente</th></tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
                             {metrics.map(m => (
                               <tr key={m.id} className="text-sm font-bold hover:bg-slate-50/50 transition-all group">
                                 <td className="py-5 uppercase tracking-tighter text-slate-700 font-black pr-4">{String(m.name)}</td>
-                                <td className="py-5 text-center">
-                                  <div className="flex flex-col items-center">
-                                    <span className={`px-3 py-1.5 rounded-xl text-[11px] font-black ${m.perf >= 80 ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'}`}>
-                                      {m.perf}%
-                                    </span>
-                                    <span className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-                                      {m.totalH} / {m.totalQ}
-                                    </span>
-                                  </div>
-                                </td>
+                                <td className="py-5 text-center"><div className="flex flex-col items-center"><span className={`px-3 py-1.5 rounded-xl text-[11px] font-black ${m.perf >= 80 ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'}`}>{m.perf}%</span><span className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{m.totalH} / {m.totalQ}</span></div></td>
                                 <td className="py-5 text-center text-blue-600/60 font-medium">{m.suggested.toFixed(1)}h</td>
                                 <td className="py-5 text-center text-slate-800 font-black">{m.totalStudyHours.toFixed(1)}h</td>
                                 <td className="py-5 text-right"><div className="flex flex-col items-end"><span className={`font-black tracking-tight ${m.timeRemaining > 0 ? 'text-amber-600' : 'text-green-600'}`}>{m.timeRemaining > 0 ? `${m.timeRemaining.toFixed(1)}h` : 'Concluído'}</span><span className="text-[9px] text-slate-400 uppercase tracking-widest font-black">{m.unstudiedCount} tópicos restantes</span></div></td>
@@ -632,16 +413,9 @@
                       </div>
                     </section>
 
-                    {/* GESTÃO DO PLANO */}
                     <section className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm overflow-hidden">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-                            <div className="flex items-center gap-3">
-                                <Icon name="settings" size={28} className="text-blue-600" />
-                                <div className="flex flex-col">
-                                    <h3 className="text-2xl font-black uppercase tracking-tighter">Gestão do Plano</h3>
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total do Edital: {stats.weightSum} questões</span>
-                                </div>
-                            </div>
+                            <div className="flex items-center gap-3"><Icon name="settings" size={28} className="text-blue-600" /><div className="flex flex-col"><h3 className="text-2xl font-black uppercase tracking-tighter">Gestão do Plano</h3><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total do Edital: {stats.weightSum} questões</span></div></div>
                             <div className="flex flex-wrap gap-3 justify-center">
                                 <button onClick={() => setActiveModal('add')} className="bg-blue-600 text-white px-7 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all cursor-pointer"><Icon name="plus" size={16} /> Adicionar Matéria</button>
                                 <button onClick={backupData} className="bg-slate-800 text-white px-7 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-950 transition-all cursor-pointer"><Icon name="download" size={16} /> Backup .JSON</button>
@@ -653,10 +427,7 @@
                                 <div key={s.id} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 group transition-all hover:border-blue-200 relative">
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2"><Icon name="edit-3" size={14} className="text-slate-300" /><input type="text" value={s.name} onChange={(e) => updateSubject(s.id, 'name', e.target.value)} className="bg-transparent border-none text-xs font-black uppercase outline-none focus:text-blue-600 w-full tracking-tight" /></div>
-                                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/50">
-                                            <div className="flex items-center gap-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Peso (Qts):</span><input type="number" value={s.weight} onChange={(e) => updateSubject(s.id, 'weight', Number(e.target.value))} className="w-14 bg-white border border-slate-200 rounded-lg p-1.5 text-center font-black text-xs text-blue-600 focus:ring-2 ring-blue-500 outline-none" /></div>
-                                            <button onClick={() => handleDeleteSubject(s.id)} className="p-2 text-slate-400 hover:text-red-500 cursor-pointer"><Icon name="trash-2" size={18}/></button>
-                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/50"><div className="flex items-center gap-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Peso:</span><input type="number" value={s.weight} onChange={(e) => updateSubject(s.id, 'weight', Number(e.target.value))} className="w-14 bg-white border border-slate-200 rounded-lg p-1.5 text-center font-black text-xs text-blue-600 focus:ring-2 ring-blue-500 outline-none" /></div><button onClick={() => handleDeleteSubject(s.id)} className="p-2 text-slate-400 hover:text-red-500 cursor-pointer"><Icon name="trash-2" size={18}/></button></div>
                                     </div>
                                 </div>
                             ))}
@@ -668,11 +439,10 @@
                 {activeTab === 'materia' && currentSubject && (
                   <div className="max-w-5xl mx-auto space-y-8 animate-in slide-in-from-right duration-300 pb-20">
                     <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
-                      <div><button onClick={() => setActiveTab('geral')} className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 cursor-pointer"><Icon name="arrow-up" className="-rotate-90" size={14} /> Voltar ao Painel Geral</button><h2 className="text-6xl font-black uppercase tracking-tighter text-slate-800 leading-none">{String(currentSubject.name)}</h2></div>
+                      <div><button onClick={() => setActiveTab('geral')} className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 cursor-pointer"><Icon name="arrow-up" className="-rotate-90" size={14} /> Voltar</button><h2 className="text-6xl font-black uppercase tracking-tighter text-slate-800 leading-none">{String(currentSubject.name)}</h2></div>
                       {isCurrentCycleSubject && <div className="bg-blue-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-2"><Icon name="zap" size={16}/> Estudo Ativo</div>}
                     </header>
 
-                    {/* FORMULÁRIO REGISTRO */}
                     <div className={`p-6 rounded-3xl border transition-all shadow-sm relative overflow-hidden ${isCurrentCycleSubject ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
                       <div className="flex items-center justify-between mb-4">
                          <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><Icon name="plus" size={16}/> Registrar Estudo</h3>
@@ -692,13 +462,11 @@
                         <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Tópico</label>
                           <select value={form.topic} onChange={e => setForm({...form, topic: e.target.value})} className="w-full bg-white p-2.5 rounded-xl text-xs font-bold border border-slate-200 outline-none shadow-sm">
                             <option value="">Selecione o tema...</option>
-                            {[...flattenTopics(currentSubject.id), ...(currentSubject.customTopics || [])]
-                              .sort((a, b) => String(a).localeCompare(String(b)))
-                              .map(t => <option key={t} value={t}>{String(t)}</option>)}
+                            {[...flattenTopics(currentSubject.id), ...(currentSubject.customTopics || [])].sort((a, b) => String(a).localeCompare(String(b))).map(t => <option key={t} value={t}>{String(t)}</option>)}
                           </select>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Data Estudo (Pretérito)</label><input type="date" value={form.studyDate} onChange={e => setForm({...form, studyDate: e.target.value})} className="w-full bg-white p-2.5 rounded-xl text-xs font-bold border border-slate-200 outline-none shadow-sm" /></div>
+                            <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Data Estudo</label><input type="date" value={form.studyDate} onChange={e => setForm({...form, studyDate: e.target.value})} className="w-full bg-white p-2.5 rounded-xl text-xs font-bold border border-slate-200 outline-none shadow-sm" /></div>
                             <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Tempo (Min)</label><input type="number" value={form.time} onChange={e => setForm({...form, time: e.target.value})} className="w-full bg-white p-2.5 rounded-xl text-xs font-bold border border-slate-200 outline-none shadow-sm" /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -709,8 +477,7 @@
                            <div className="flex-1 space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Próxima Revisão</label><input type="date" value={form.nextRev} onChange={e => setForm({...form, nextRev: e.target.value})} className="w-full bg-white p-2.5 rounded-xl text-xs font-bold border border-slate-200 outline-none shadow-sm" /></div>
                            <div className="w-32 space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Tipo</label>
                               <select value={form.nextRevType} onChange={e => setForm({...form, nextRevType: e.target.value})} className="w-full bg-white p-2.5 rounded-xl text-[10px] font-bold border border-slate-200 outline-none shadow-sm">
-                                <option value="completa">Completa</option>
-                                <option value="breve">Breve</option>
+                                <option value="completa">Completa</option><option value="breve">Breve</option>
                               </select>
                            </div>
                         </div>
@@ -718,10 +485,9 @@
                       <button onClick={() => registerSession(currentSubject.id)} className="w-full bg-blue-600 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all mt-4 cursor-pointer">Confirmar e Atualizar Ciclo</button>
                     </div>
 
-                    {/* DESEMPENHO GERAL DE ASSUNTOS */}
                     <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                       <div className="flex items-center gap-2 mb-8"><Icon name="bar-chart" size={18} className="text-blue-600" /><h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Desempenho Geral de Assuntos</h3></div>
-                       <div className="grid grid-cols-12 gap-4 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4"><div className="col-span-5">Assunto / Tópico</div><div className="col-span-2 text-center">Tempo Estudo</div><div className="col-span-2 text-center">Questões</div><div className="col-span-1 text-center">Acertos</div><div className="col-span-2 text-right">Aproveitamento</div></div>
+                       <div className="flex items-center gap-2 mb-8"><Icon name="bar-chart" size={18} className="text-blue-600" /><h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Desempenho de Assuntos</h3></div>
+                       <div className="grid grid-cols-12 gap-4 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4"><div className="col-span-5">Assunto / Tópico</div><div className="col-span-2 text-center">Tempo</div><div className="col-span-2 text-center">Questões</div><div className="col-span-1 text-center">Acertos</div><div className="col-span-2 text-right">Aproveitamento</div></div>
                        <div className="space-y-1">
                          {topicStats.map((ts, idx) => {
                            const perc = ts.q > 0 ? Math.round((ts.h / ts.q) * 100) : 0;
@@ -739,13 +505,11 @@
                        </div>
                     </div>
 
-                    {/* OBSERVAÇÕES */}
                     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col h-[260px]">
                        <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2"><Icon name="file-text" size={16}/> Observações</h3>
                        <textarea className="flex-1 bg-slate-50 border-none rounded-2xl p-6 text-xs outline-none resize-none font-medium leading-relaxed shadow-inner" placeholder="Jurisprudência, mnemónicos e pontos de atenção..." value={String(currentSubject.notes)} onChange={(e) => updateSubject(currentSubject.id, 'notes', e.target.value)} />
                     </div>
 
-                    {/* REGISTOS RECENTES */}
                     <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm min-h-[400px]">
                        <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-8 flex items-center gap-2"><Icon name="history" size={16}/> Registos Recentes</h3>
                        <div className="grid grid-cols-12 gap-4 px-4 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest"><div className="col-span-5">Tópico / Data</div><div className="col-span-2 text-center">Tempo</div><div className="col-span-2 text-center">Questões</div><div className="col-span-2 text-center">Desempenho</div><div className="col-span-1 text-right"></div></div>
@@ -777,16 +541,9 @@
                     <header className="flex justify-between items-center border-b border-slate-200 pb-10">
                       <h2 className="text-5xl font-black uppercase tracking-tighter text-slate-800">Pauta de Revisões</h2>
                       <div className="flex items-center gap-4">
-                        <select 
-                          value={revFilterType} 
-                          onChange={e => setRevFilterType(e.target.value)}
-                          className="bg-white border border-slate-200 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 ring-blue-500 shadow-sm transition-all"
-                        >
-                          <option value="all">Todos os Tipos</option>
-                          <option value="completa">Completa</option>
-                          <option value="breve">Breve</option>
+                        <select value={revFilterType} onChange={e => setRevFilterType(e.target.value)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 ring-blue-500 shadow-sm transition-all">
+                          <option value="all">Todos os Tipos</option><option value="completa">Completa</option><option value="breve">Breve</option>
                         </select>
-
                         <button onClick={() => setShowFutureRevisions(!showFutureRevisions)} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${showFutureRevisions ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-200 text-slate-600'}`}>{showFutureRevisions ? 'Focar Vencidas' : 'Ver Tudo / Urgentes'}</button>
                         <div className="bg-white px-6 py-3 rounded-full border border-slate-200 text-xs font-bold text-slate-500 flex items-center gap-2"><Icon name="calendar" size={16} /> {new Date().toLocaleDateString('pt-BR')}</div>
                       </div>
@@ -796,12 +553,9 @@
                       {revisionList.length === 0 && <div className="p-20 text-center bg-white rounded-[40px] border border-dashed border-slate-300 text-slate-400 font-bold uppercase tracking-widest">Nenhuma revisão para o período selecionado</div>}
                       {revisionList.map(rev => (
                         <div key={rev.id} className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm hover:shadow-xl transition-all group flex flex-col xl:flex-row items-center gap-8">
-                         
                           <div className="flex-1 min-w-0 w-full">
                             <div className="flex items-center gap-3 mb-2">
-                               <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${rev.daysLeft <= 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-100 text-blue-600'}`}>
-                                 {rev.daysLeft <= 0 ? 'Vencida' : `Em ${rev.daysLeft} dias`}
-                               </span>
+                               <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${rev.daysLeft <= 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-100 text-blue-600'}`}>{rev.daysLeft <= 0 ? 'Vencida' : `Em ${rev.daysLeft} dias`}</span>
                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{String(rev.subjectName)}</p>
                                {rev.nextRevType === 'breve' && <span className="text-[9px] font-black text-amber-600 uppercase flex items-center gap-1 border border-amber-200 px-2 py-0.5 rounded-lg"><Icon name="activity" size={10}/> Revisão Breve</span>}
                             </div>
@@ -809,40 +563,25 @@
                           </div>
 
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full xl:w-auto shrink-0 bg-slate-50 p-6 rounded-[32px] border border-slate-100">
-                            <div className="space-y-1">
-                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Questões</label>
-                              <input type="number" value={revForms[rev.id]?.q || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'q', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center" />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Acertos</label>
-                              <input type="number" value={revForms[rev.id]?.h || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'h', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center" />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Tempo (m)</label>
-                              <input type="number" value={revForms[rev.id]?.time || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'time', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center" />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Próx. Rev</label>
-                              <input type="date" value={revForms[rev.id]?.nextRev || ''} onChange={(e) => updateRevQuickForm(rev.id, 'nextRev', e.target.value)} className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm" />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Próx. Tipo</label>
+                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Questões</label><input type="number" value={revForms[rev.id]?.q || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'q', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center" /></div>
+                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Acertos</label><input type="number" value={revForms[rev.id]?.h || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'h', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center" /></div>
+                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Tempo (m)</label><input type="number" value={revForms[rev.id]?.time || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'time', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center" /></div>
+                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Próx. Rev</label><input type="date" value={revForms[rev.id]?.nextRev || ''} onChange={(e) => updateRevQuickForm(rev.id, 'nextRev', e.target.value)} className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm" /></div>
+                            <div className="space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Próx. Tipo</label>
                               <select value={revForms[rev.id]?.nextRevType || 'completa'} onChange={(e) => updateRevQuickForm(rev.id, 'nextRevType', e.target.value)} className="w-full bg-white p-3 rounded-xl text-[10px] font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm">
-                                <option value="completa">Completa</option>
-                                <option value="breve">Breve</option>
+                                <option value="completa">Completa</option><option value="breve">Breve</option>
                               </select>
                             </div>
                           </div>
 
                           <div className="flex gap-2 w-full xl:w-auto shrink-0">
                             <button onClick={() => handleQuickRevisionSave(rev)} disabled={!revForms[rev.id]?.nextRev} className={`flex-1 xl:flex-none xl:w-48 py-4 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${revForms[rev.id]?.nextRev ? 'bg-blue-600 text-white shadow-lg hover:scale-105 active:scale-95' : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}>
-                              <Icon name="save" size={14}/> Salvar Revisão
+                              <Icon name="save" size={14}/> Salvar
                             </button>
                             <button onClick={() => { setSelectedSubId(rev.subjectId); setActiveTab('materia'); setForm({...form, topic: rev.topic, isRevision: true}); }} className="p-4 bg-slate-900 text-white rounded-[24px] hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-lg">
                               <Icon name="arrow-right-circle" size={22}/>
                             </button>
                           </div>
-
                         </div>
                       ))}
                     </div>
