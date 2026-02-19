@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.1/pocketbase.umd.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -22,6 +24,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
+        const pb = new PocketBase(https://dashboard-pcpr-pocketbase.kgmk5k.easypanel.host/);
         
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => { lucide.createIcons(); });
@@ -63,23 +66,13 @@
         ];
 
         function App() {
-          const [subjects, setSubjects] = useState(() => {
-            try { const saved = localStorage.getItem('pcpr_study_v27_data'); return saved ? JSON.parse(saved) : INITIAL_SUBJECTS; } 
-            catch (e) { return INITIAL_SUBJECTS; }
-          });
-          const [availableTime, setAvailableTime] = useState(() => {
-            try { const saved = localStorage.getItem('pcpr_study_v27_meta'); return saved ? Number(saved) : 100; } 
-            catch (e) { return 100; }
-          });
-          const [cycleSequence, setCycleSequence] = useState(() => {
-            try { const saved = localStorage.getItem('pcpr_study_v27_cycle'); return saved ? JSON.parse(saved) : []; } 
-            catch (e) { return []; }
-          });
-          const [currentCycleIndex, setCurrentCycleIndex] = useState(() => {
-            try { const saved = localStorage.getItem('pcpr_study_v27_idx'); return saved ? Number(saved) : 0; } 
-            catch (e) { return 0; }
-          });
+          // 1. Estados de Dados (Iniciam limpos e depois carregam da VPS)
+          const [subjects, setSubjects] = useState(INITIAL_SUBJECTS);
+          const [availableTime, setAvailableTime] = useState(100);
+          const [cycleSequence, setCycleSequence] = useState([]);
+          const [currentCycleIndex, setCurrentCycleIndex] = useState(0);
 
+          // 2. Estados de Interface (MANTENHA ESTES!)
           const [activeTab, setActiveTab] = useState('geral');
           const [selectedSubId, setSelectedSubId] = useState(null);
           const [activeModal, setActiveModal] = useState(null);
@@ -91,6 +84,43 @@
           const [confirmModalData, setConfirmModalData] = useState(null);
           const [revForms, setRevForms] = useState({});
           const [form, setForm] = useState({ topic: '', time: 0, q: 0, h: 0, nextRev: '', isRevision: false, nextRevType: 'completa', studyDate: new Date().toISOString().split('T')[0] });
+
+          // 3. CARREGAR DA VPS (POCKETBASE) AO ABRIR O SITE
+          useEffect(() => {
+            async function loadData() {
+              try {
+                // Tenta pegar o primeiro registro da coleção 'estudos'
+                const record = await pb.collection('estudos').getFirstListItem('');
+                if (record) {
+                  setSubjects(record.subjects);
+                  setAvailableTime(record.availableTime);
+                  setCycleSequence(record.cycleSequence);
+                  setCurrentCycleIndex(record.currentCycleIndex);
+                }
+              } catch (e) { console.log("Sem dados na VPS ainda."); }
+            }
+            loadData();
+          }, []);
+
+          // 4. SALVAR NA VPS SEMPRE QUE VOCÊ MUDAR ALGO
+          useEffect(() => {
+            const saveData = async () => {
+              try {
+                const data = { subjects, availableTime, cycleSequence, currentCycleIndex };
+                const record = await pb.collection('estudos').getFirstListItem('');
+                await pb.collection('estudos').update(record.id, data);
+              } catch (e) {
+                // Se não existir registro, cria o primeiro
+                try {
+                  await pb.collection('estudos').create({ subjects, availableTime, cycleSequence, currentCycleIndex });
+                } catch (err) { console.error("Erro ao salvar:", err); }
+              }
+            };
+            
+            // Usamos um pequeno atraso para não sobrecarregar a VPS a cada clique
+            const timer = setTimeout(saveData, 1000);
+            return () => clearTimeout(timer);
+          }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
 
           useEffect(() => {
             try {
