@@ -65,6 +65,13 @@
           { id: 'inf', name: 'Informática', weight: 5, notes: '', logs: [], history: [], customTopics: [] }
         ];
 
+        // FUNÇÃO ESCUDO: Protege contra nulos, indefinidos ou objetos malformados no banco
+        const getSafeId = (item) => {
+            if (item === null || item === undefined) return null;
+            if (typeof item === 'object') return String(item.id || item.value || '');
+            return String(item);
+        };
+
         function App() {
           const [subjects, setSubjects] = useState(INITIAL_SUBJECTS);
           const [availableTime, setAvailableTime] = useState(100);
@@ -83,7 +90,7 @@
           const [revForms, setRevForms] = useState({});
           const [form, setForm] = useState({ topic: '', time: 0, q: 0, h: 0, nextRev: '', isRevision: false, nextRevType: 'completa', studyDate: new Date().toISOString().split('T')[0] });
 
-          // CARREGAMENTO DEFENSIVO (Evita crachar com dados antigos/vazios da VPS)
+          // CARREGAMENTO DEFENSIVO
           useEffect(() => {
             async function loadData() {
               try {
@@ -93,7 +100,7 @@
                   if (record.availableTime) setAvailableTime(Number(record.availableTime) || 100);
                   if (record.cycleSequence && Array.isArray(record.cycleSequence)) {
                       // Limpa objetos fantasmas e converte tudo em IDs puros
-                      const safeCycle = record.cycleSequence.map(item => typeof item === 'object' ? (item.id || item.value || '') : String(item)).filter(Boolean);
+                      const safeCycle = record.cycleSequence.map(item => getSafeId(item)).filter(Boolean);
                       setCycleSequence(safeCycle);
                   }
                   if (record.currentCycleIndex !== undefined) setCurrentCycleIndex(Number(record.currentCycleIndex) || 0);
@@ -123,6 +130,15 @@
             };
             const timer = setTimeout(saveData, 800);
             return () => clearTimeout(timer);
+          }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
+
+          useEffect(() => {
+            try {
+              localStorage.setItem('pcpr_study_v27_data', JSON.stringify(subjects));
+              localStorage.setItem('pcpr_study_v27_meta', availableTime.toString());
+              localStorage.setItem('pcpr_study_v27_cycle', JSON.stringify(cycleSequence));
+              localStorage.setItem('pcpr_study_v27_idx', currentCycleIndex.toString());
+            } catch (e) { console.error("Erro ao guardar"); }
           }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
 
           const flattenTopics = (subjectId) => {
@@ -165,7 +181,6 @@
             (subjects || []).forEach(s => {
               const latestPerTopic = {};
               (s.logs || []).forEach(l => {
-                // Proteção contra datas vazias/corrompidas
                 const dateStr = l.date || '';
                 const logDate = dateStr.includes('/') ? new Date(dateStr.split('/').reverse().join('-')) : new Date();
                 
@@ -217,10 +232,10 @@
             setActiveModal(null);
           };
 
-          // FUNÇÃO DE ZERAR SEGURA E PROTEGIDA
+          // FUNÇÃO DE ZERAR SEGURA - HARD RESET (Restaura o Direito Penal e apaga ciclos sujos)
           const handleReset = () => {
             try {
-              setSubjects(prev => (Array.isArray(prev) ? prev : INITIAL_SUBJECTS).map(s => ({ ...s, notes: '', logs: [], history: [] })));
+              setSubjects(INITIAL_SUBJECTS);
               setAvailableTime(100); 
               setCycleSequence([]); 
               setCurrentCycleIndex(0); 
@@ -232,9 +247,9 @@
           };
 
           const handleDeleteSubject = (id) => {
-            setSubjects((subjects || []).filter(s => s.id !== id)); 
-            setCycleSequence((cycleSequence || []).filter(sid => String(sid) !== String(id)));
-            if (selectedSubId === id) setSelectedSubId(null);
+            setSubjects((subjects || []).filter(s => String(s.id) !== String(id))); 
+            setCycleSequence((cycleSequence || []).filter(sid => getSafeId(sid) !== String(id)));
+            if (String(selectedSubId) === String(id)) setSelectedSubId(null);
           };
 
           const updateSubject = (id, field, value) => {
@@ -265,7 +280,6 @@
             setForm({ ...form, topic: '' });
           };
 
-          // MOVIMENTO DE CICLO SEGURO (Impede index fora dos limites e arrays quebrados)
           const moveCycleItem = (index, direction) => {
             const newSeq = [...(cycleSequence || [])]; 
             const target = index + direction;
@@ -324,10 +338,9 @@
             // Lógica estabilizada de avanço do ciclo
             const safeCycle = cycleSequence || [];
             const safeIndex = Number(currentCycleIndex) || 0;
-            const currentCycleSubjectId = safeCycle[safeIndex];
-            const actualSid = typeof currentCycleSubjectId === 'object' ? (currentCycleSubjectId.id || currentCycleSubjectId.value) : String(currentCycleSubjectId);
+            const actualSid = getSafeId(safeCycle[safeIndex]);
 
-            if (actualSid === String(id) && safeCycle.length > 0) {
+            if (actualSid && actualSid === String(id) && safeCycle.length > 0) {
               setCurrentCycleIndex((safeIndex + 1) % safeCycle.length);
             }
             
@@ -359,14 +372,13 @@
             URL.revokeObjectURL(url);
           };
 
-          const currentSubject = (subjects || []).find(s => s.id === selectedSubId);
+          const currentSubject = (subjects || []).find(s => String(s.id) === String(selectedSubId));
           
-          // Verificação segura se a matéria atual é a matéria do ciclo
+          // Verificação super segura da matéria ativa do ciclo
           const safeCycleArr = cycleSequence || [];
           const safeCurrentIdx = Number(currentCycleIndex) || 0;
-          const cycleActiveItem = safeCycleArr[safeCurrentIdx];
-          const cycleActiveId = typeof cycleActiveItem === 'object' ? (cycleActiveItem.id || cycleActiveItem.value) : String(cycleActiveItem);
-          const isCurrentCycleSubject = cycleActiveId === selectedSubId;
+          const cycleActiveId = getSafeId(safeCycleArr[safeCurrentIdx]);
+          const isCurrentCycleSubject = cycleActiveId === String(selectedSubId);
 
           return (
             <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans relative overflow-x-hidden">
@@ -388,7 +400,7 @@
                   <div className="bg-white rounded-[32px] p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
                     <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><Icon name="alert-triangle" className="text-red-600" size={40} /></div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter mb-4 text-center">Zerar Tudo?</h3>
-                    <p className="text-slate-500 text-center mb-10 font-medium text-sm leading-relaxed">Esta ação apaga apenas os seus registros, histórico e notas.</p>
+                    <p className="text-slate-500 text-center mb-10 font-medium text-sm leading-relaxed">Esta ação aplicará um Hard Reset, apagando o histórico e restaurando as disciplinas originais.</p>
                     <div className="flex gap-4">
                       <button onClick={handleReset} className="flex-1 bg-red-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 cursor-pointer">Sim, Limpar</button>
                       <button onClick={() => setActiveModal(null)} className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-black uppercase tracking-widest text-xs cursor-pointer">Manter Dados</button>
@@ -464,7 +476,9 @@
                       </div>
                       <div className="flex flex-wrap gap-6">
                         {(cycleSequence || []).map((sid, idx) => {
-                          const actualSid = typeof sid === 'object' ? (sid.id || sid.value) : String(sid);
+                          const actualSid = getSafeId(sid);
+                          if (!actualSid) return null;
+                          
                           const sub = (subjects || []).find(s => String(s.id) === actualSid);
                           const active = Number(currentCycleIndex) === idx;
                           const mData = (metrics || []).find(m => String(m.id) === actualSid);
