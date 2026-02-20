@@ -102,25 +102,33 @@
             loadData();
           }, []);
 
-          // 4. SALVAR NA VPS SEMPRE QUE VOCÊ MUDAR ALGO
-          useEffect(() => {
-            const saveData = async () => {
+          // 4. SALVAR NA VPS SEMPRE QUE VOCÊ MUDAR ALGO (VERSÃO ESTABILIZADA)
+        useEffect(() => {
+          const saveData = async () => {
+            try {
+              const data = { subjects, availableTime, cycleSequence, currentCycleIndex };
+              
+              let record;
               try {
-                const data = { subjects, availableTime, cycleSequence, currentCycleIndex };
-                const record = await pb.collection('estudos').getFirstListItem('');
-                await pb.collection('estudos').update(record.id, data);
-              } catch (e) {
-                // Se não existir registro, cria o primeiro
-                try {
-                  await pb.collection('estudos').create({ subjects, availableTime, cycleSequence, currentCycleIndex });
-                } catch (err) { console.error("Erro ao salvar:", err); }
+                // Busca o registro de forma isolada para não travar o fluxo principal
+                record = await pb.collection('estudos').getFirstListItem('');
+              } catch (err) {
+                // Se não encontrar, apenas ignora o erro para criar abaixo
               }
-            };
-            
-            // Usamos um pequeno atraso para não sobrecarregar a VPS a cada clique
-            const timer = setTimeout(saveData, 1000);
-            return () => clearTimeout(timer);
-          }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
+
+              if (record && record.id) {
+                await pb.collection('estudos').update(record.id, data);
+              } else {
+                await pb.collection('estudos').create(data);
+              }
+            } catch (e) {
+              console.error("Erro crítico ao sincronizar:", e);
+            }
+          };
+          
+          const timer = setTimeout(saveData, 800); // Delay levemente menor para resposta mais rápida
+          return () => clearTimeout(timer);
+        }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
 
           useEffect(() => {
             try {
@@ -262,28 +270,63 @@
           };
 
           const registerSession = (id, sessionData = null, bypass = false) => {
-            const finalData = sessionData || form;
-            if (!finalData.topic) return;
-            const isMissingData = !finalData.time || !finalData.nextRev || (!finalData.q && finalData.q !== 0);
-            if (!bypass && isMissingData) { setConfirmModalData({ id, sessionData }); return; }
+          const finalData = sessionData || form;
+          
+          // PROTEÇÃO ANTI-ERRO: Aborta se os dados estiverem corrompidos ou vazios
+          if (!finalData || !finalData.topic) return; 
 
-            setSubjects(prev => prev.map(s => {
-              if (s.id === id) {
-                const studyDateObj = new Date(finalData.studyDate + 'T12:00:00');
-                const newLog = {
-                  id: Date.now(), topic: finalData.topic, time: Number(finalData.time) || 0, q: Number(finalData.q) || 0,
-                  h: Number(finalData.h) || 0, isRevision: finalData.isRevision, nextRevType: finalData.nextRevType || 'completa',
-                  timestamp: Date.now(), date: studyDateObj.toLocaleDateString('pt-BR'), nextRev: finalData.nextRev || ''
-                };
-                const accuracy = newLog.q > 0 ? (newLog.h / newLog.q) * 100 : 0;
-                return { ...s, logs: [newLog, ...(s.logs || [])], history: [...(s.history || []), { date: newLog.date, accuracy: Math.round(accuracy), topic: newLog.topic }].slice(-30) };
-              }
-              return s;
-            }));
-            if (cycleSequence[currentCycleIndex] === id) setCurrentCycleIndex(prev => (prev + 1) % (cycleSequence.length || 1));
-            if (!sessionData) setForm({ topic: '', time: 0, q: 0, h: 0, nextRev: '', isRevision: false, nextRevType: 'completa', studyDate: new Date().toISOString().split('T')[0] });
-            setConfirmModalData(null);
-          };
+          const isMissingData = !finalData.time || !finalData.nextRev || (!finalData.q && finalData.q !== 0);
+          if (!bypass && isMissingData) { 
+            setConfirmModalData({ id, sessionData }); 
+            return; 
+          }
+
+          setSubjects(prev => prev.map(s => {
+            if (s.id === id) {
+              // Garante que sempre haja uma data válida para evitar a tela branca
+              const dateStr = finalData.studyDate || new Date().toISOString().split('T')[0];
+              const studyDateObj = new Date(dateStr + 'T12:00:00');
+              
+              const newLog = {
+                id: Date.now(), 
+                topic: finalData.topic, 
+                time: Number(finalData.time) || 0, 
+                q: Number(finalData.q) || 0,
+                h: Number(finalData.h) || 0, 
+                isRevision: !!finalData.isRevision, 
+                nextRevType: finalData.nextRevType || 'completa',
+                timestamp: Date.now(), 
+                date: studyDateObj.toLocaleDateString('pt-BR'), 
+                nextRev: finalData.nextRev || ''
+              };
+              
+              const accuracy = newLog.q > 0 ? (newLog.h / newLog.q) * 100 : 0;
+              return { 
+                ...s, 
+                logs: [newLog, ...(s.logs || [])], 
+                history: [...(s.history || []), { 
+                    date: newLog.date, 
+                    accuracy: Math.round(accuracy), 
+                    topic: newLog.topic 
+                }].slice(-30) 
+              };
+            }
+            return s;
+          }));
+
+          if (cycleSequence[currentCycleIndex] === id) {
+            setCurrentCycleIndex(prev => (prev + 1) % (cycleSequence.length || 1));
+          }
+          
+          if (!sessionData) {
+            setForm({ 
+              topic: '', time: 0, q: 0, h: 0, nextRev: '', 
+              isRevision: false, nextRevType: 'completa', 
+              studyDate: new Date().toISOString().split('T')[0] 
+            });
+          }
+          setConfirmModalData(null);
+        };
 
           const updateRevQuickForm = (revId, field, value) => {
             setRevForms(prev => ({ ...prev, [revId]: { ...(prev[revId] || { time: 0, q: 0, h: 0, nextRev: '', nextRevType: 'completa' }), [field]: value } }));
