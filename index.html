@@ -83,15 +83,20 @@
           const [revForms, setRevForms] = useState({});
           const [form, setForm] = useState({ topic: '', time: 0, q: 0, h: 0, nextRev: '', isRevision: false, nextRevType: 'completa', studyDate: new Date().toISOString().split('T')[0] });
 
+          // CARREGAMENTO DEFENSIVO (Evita crachar com dados antigos/vazios da VPS)
           useEffect(() => {
             async function loadData() {
               try {
                 const record = await pb.collection('estudos').getFirstListItem('');
                 if (record) {
-                  setSubjects(record.subjects);
-                  setAvailableTime(record.availableTime);
-                  setCycleSequence(record.cycleSequence);
-                  setCurrentCycleIndex(record.currentCycleIndex);
+                  if (record.subjects && Array.isArray(record.subjects)) setSubjects(record.subjects);
+                  if (record.availableTime) setAvailableTime(Number(record.availableTime) || 100);
+                  if (record.cycleSequence && Array.isArray(record.cycleSequence)) {
+                      // Limpa objetos fantasmas e converte tudo em IDs puros
+                      const safeCycle = record.cycleSequence.map(item => typeof item === 'object' ? (item.id || item.value || '') : String(item)).filter(Boolean);
+                      setCycleSequence(safeCycle);
+                  }
+                  if (record.currentCycleIndex !== undefined) setCurrentCycleIndex(Number(record.currentCycleIndex) || 0);
                 }
               } catch (e) { console.log("Sem dados na VPS ainda."); }
             }
@@ -120,15 +125,6 @@
             return () => clearTimeout(timer);
           }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
 
-          useEffect(() => {
-            try {
-              localStorage.setItem('pcpr_study_v27_data', JSON.stringify(subjects));
-              localStorage.setItem('pcpr_study_v27_meta', availableTime.toString());
-              localStorage.setItem('pcpr_study_v27_cycle', JSON.stringify(cycleSequence));
-              localStorage.setItem('pcpr_study_v27_idx', currentCycleIndex.toString());
-            } catch (e) { console.error("Erro ao guardar"); }
-          }, [subjects, availableTime, cycleSequence, currentCycleIndex]);
-
           const flattenTopics = (subjectId) => {
             const data = DEFAULT_TOPICS[subjectId];
             if (!data) return [];
@@ -138,18 +134,18 @@
 
           const stats = useMemo(() => {
             let qTotal = 0, hTotal = 0, totalHoursStudied = 0;
-            subjects.forEach(s => {
+            (subjects || []).forEach(s => {
               (s.logs || []).forEach(l => {
                 qTotal += (Number(l.q) || 0); hTotal += (Number(l.h) || 0); totalHoursStudied += ((Number(l.time) || 0) / 60);
               });
             });
-            const weightSum = subjects.reduce((acc, s) => acc + (Number(s.weight) || 0), 0);
+            const weightSum = (subjects || []).reduce((acc, s) => acc + (Number(s.weight) || 0), 0);
             return { accuracy: qTotal > 0 ? (hTotal / qTotal) * 100 : 0, totalHoursStudied, weightSum, hTotal, qTotal };
           }, [subjects]);
 
           const metrics = useMemo(() => {
-            return subjects.map(s => {
-              const sSuggested = stats.weightSum > 0 ? (s.weight / stats.weightSum) * availableTime : 0;
+            return (subjects || []).map(s => {
+              const sSuggested = stats.weightSum > 0 ? (Number(s.weight || 0) / stats.weightSum) * availableTime : 0;
               const q = (s.logs || []).reduce((acc, l) => acc + (Number(l.q) || 0), 0);
               const h = (s.logs || []).reduce((acc, l) => acc + (Number(l.h) || 0), 0);
               const totalStudyHours = (s.logs || []).reduce((acc, l) => acc + (Number(l.time) || 0), 0) / 60;
@@ -166,11 +162,17 @@
             const list = [];
             const today = new Date(); today.setHours(0, 0, 0, 0);
 
-            subjects.forEach(s => {
+            (subjects || []).forEach(s => {
               const latestPerTopic = {};
               (s.logs || []).forEach(l => {
-                const logDate = new Date(l.date.split('/').reverse().join('-'));
-                if (!latestPerTopic[l.topic] || logDate > new Date(latestPerTopic[l.topic].date.split('/').reverse().join('-'))) {
+                // Proteção contra datas vazias/corrompidas
+                const dateStr = l.date || '';
+                const logDate = dateStr.includes('/') ? new Date(dateStr.split('/').reverse().join('-')) : new Date();
+                
+                const existingDateStr = latestPerTopic[l.topic]?.date || '';
+                const existingDate = existingDateStr.includes('/') ? new Date(existingDateStr.split('/').reverse().join('-')) : new Date(0);
+
+                if (!latestPerTopic[l.topic] || logDate > existingDate) {
                   latestPerTopic[l.topic] = l;
                 }
               });
@@ -192,7 +194,7 @@
 
           const topicStats = useMemo(() => {
             if (!selectedSubId) return [];
-            const sub = subjects.find(s => s.id === selectedSubId);
+            const sub = (subjects || []).find(s => s.id === selectedSubId);
             if (!sub) return [];
             const allTopicNames = [...flattenTopics(selectedSubId), ...(sub.customTopics || [])];
             const statsMap = {};
@@ -211,22 +213,32 @@
           const handleAddSubject = (name) => {
             if (!name?.trim()) return;
             const newId = `custom-${Date.now()}`;
-            setSubjects([...subjects, { id: newId, name: name.trim(), weight: 5, notes: '', logs: [], history: [], customTopics: [] }]);
+            setSubjects([...(subjects || []), { id: newId, name: name.trim(), weight: 5, notes: '', logs: [], history: [], customTopics: [] }]);
             setActiveModal(null);
           };
 
+          // FUNÇÃO DE ZERAR SEGURA E PROTEGIDA
           const handleReset = () => {
-            setSubjects(prev => prev.map(s => ({ ...s, notes: '', logs: [], history: [] })));
-            setAvailableTime(100); setCycleSequence([]); setCurrentCycleIndex(0); setActiveModal(null); setActiveTab('geral');
+            try {
+              setSubjects(prev => (Array.isArray(prev) ? prev : INITIAL_SUBJECTS).map(s => ({ ...s, notes: '', logs: [], history: [] })));
+              setAvailableTime(100); 
+              setCycleSequence([]); 
+              setCurrentCycleIndex(0); 
+              setActiveModal(null); 
+              setActiveTab('geral');
+            } catch (e) {
+              console.error("Erro ao zerar dados:", e);
+            }
           };
 
           const handleDeleteSubject = (id) => {
-            setSubjects(subjects.filter(s => s.id !== id)); setCycleSequence(cycleSequence.filter(sid => sid !== id));
+            setSubjects((subjects || []).filter(s => s.id !== id)); 
+            setCycleSequence((cycleSequence || []).filter(sid => String(sid) !== String(id)));
             if (selectedSubId === id) setSelectedSubId(null);
           };
 
           const updateSubject = (id, field, value) => {
-            setSubjects(subjects.map(s => s.id === id ? { ...s, [field]: value } : s));
+            setSubjects((subjects || []).map(s => s.id === id ? { ...s, [field]: value } : s));
           };
 
           const handleDeleteLog = (subjectId, logId) => {
@@ -253,9 +265,9 @@
             setForm({ ...form, topic: '' });
           };
 
-          // CORREÇÃO: Função reconstruída para evitar confusão do navegador
+          // MOVIMENTO DE CICLO SEGURO (Impede index fora dos limites e arrays quebrados)
           const moveCycleItem = (index, direction) => {
-            const newSeq = [...cycleSequence]; 
+            const newSeq = [...(cycleSequence || [])]; 
             const target = index + direction;
             if (target < 0 || target >= newSeq.length) return;
             
@@ -277,7 +289,7 @@
               return; 
             }
 
-            setSubjects(prev => prev.map(s => {
+            setSubjects(prev => (prev || []).map(s => {
               if (s.id === id) {
                 const dateStr = finalData.studyDate || new Date().toISOString().split('T')[0];
                 const studyDateObj = new Date(dateStr + 'T12:00:00');
@@ -291,7 +303,7 @@
                   isRevision: !!finalData.isRevision, 
                   nextRevType: finalData.nextRevType || 'completa',
                   timestamp: Date.now(), 
-                  date: studyDateObj.toLocaleDateString('pt-BR'), 
+                  date: studyDateObj.toLocaleDateString('pt-BR') || '01/01/2026', 
                   nextRev: finalData.nextRev || ''
                 };
                 
@@ -309,8 +321,14 @@
               return s;
             }));
 
-            if (cycleSequence[currentCycleIndex] === id) {
-              setCurrentCycleIndex(prev => (prev + 1) % (cycleSequence.length || 1));
+            // Lógica estabilizada de avanço do ciclo
+            const safeCycle = cycleSequence || [];
+            const safeIndex = Number(currentCycleIndex) || 0;
+            const currentCycleSubjectId = safeCycle[safeIndex];
+            const actualSid = typeof currentCycleSubjectId === 'object' ? (currentCycleSubjectId.id || currentCycleSubjectId.value) : String(currentCycleSubjectId);
+
+            if (actualSid === String(id) && safeCycle.length > 0) {
+              setCurrentCycleIndex((safeIndex + 1) % safeCycle.length);
             }
             
             if (!sessionData) {
@@ -341,8 +359,14 @@
             URL.revokeObjectURL(url);
           };
 
-          const currentSubject = subjects.find(s => s.id === selectedSubId);
-          const isCurrentCycleSubject = cycleSequence[currentCycleIndex] === selectedSubId;
+          const currentSubject = (subjects || []).find(s => s.id === selectedSubId);
+          
+          // Verificação segura se a matéria atual é a matéria do ciclo
+          const safeCycleArr = cycleSequence || [];
+          const safeCurrentIdx = Number(currentCycleIndex) || 0;
+          const cycleActiveItem = safeCycleArr[safeCurrentIdx];
+          const cycleActiveId = typeof cycleActiveItem === 'object' ? (cycleActiveItem.id || cycleActiveItem.value) : String(cycleActiveItem);
+          const isCurrentCycleSubject = cycleActiveId === selectedSubId;
 
           return (
             <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans relative overflow-x-hidden">
@@ -401,9 +425,9 @@
                       </button>
 
                       <div className="hidden md:block pt-6 pb-2 px-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Suas Disciplinas</div>
-                      {subjects.map(s => (
+                      {(subjects || []).map(s => (
                           <button key={s.id} onClick={() => { setSelectedSubId(s.id); setActiveTab('materia'); }} className={`hidden md:flex w-full text-left px-5 py-3 rounded-xl text-xs font-bold transition-all items-center justify-between cursor-pointer ${selectedSubId === s.id && activeTab === 'materia' ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'text-slate-500 hover:bg-slate-50 border-l-4 border-transparent'}`}>
-                              <span className="truncate pr-2">{String(s.name)}</span>{cycleSequence[currentCycleIndex] === s.id && <Icon name="zap" size={12} className="text-amber-500" />}
+                              <span className="truncate pr-2">{String(s.name)}</span>{cycleActiveId === String(s.id) && <Icon name="zap" size={12} className="text-amber-500" />}
                           </button>
                       ))}
                   </nav>
@@ -434,30 +458,32 @@
                     <section className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                         <div className="space-y-1"><h3 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3"><Icon name="refresh-cw" size={28} className="text-blue-600" /> Sequenciador do Ciclo</h3><p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Sua fila estratégica de estudos</p></div>
-                        <select className="bg-slate-100 p-5 rounded-2xl text-xs font-black uppercase outline-none focus:ring-2 ring-blue-500 w-full md:w-auto min-w-[200px]" onChange={e => { if(e.target.value) { setCycleSequence([...cycleSequence, e.target.value]); e.target.value=""; } }}>
-                          <option value="">+ Incluir na Fila</option>{subjects.map(s => <option key={s.id} value={s.id}>{String(s.name)}</option>)}
+                        <select className="bg-slate-100 p-5 rounded-2xl text-xs font-black uppercase outline-none focus:ring-2 ring-blue-500 w-full md:w-auto min-w-[200px]" onChange={e => { if(e.target.value) { setCycleSequence([...(cycleSequence || []), e.target.value]); e.target.value=""; } }}>
+                          <option value="">+ Incluir na Fila</option>{(subjects || []).map(s => <option key={s.id} value={s.id}>{String(s.name)}</option>)}
                         </select>
                       </div>
                       <div className="flex flex-wrap gap-6">
-                        {cycleSequence.map((sid, idx) => {
-                          const sub = subjects.find(s => s.id === sid);
-                          const active = currentCycleIndex === idx;
-                          const mData = metrics.find(m => m.id === sid);
-                          if (!sub) return null;
+                        {(cycleSequence || []).map((sid, idx) => {
+                          const actualSid = typeof sid === 'object' ? (sid.id || sid.value) : String(sid);
+                          const sub = (subjects || []).find(s => String(s.id) === actualSid);
+                          const active = Number(currentCycleIndex) === idx;
+                          const mData = (metrics || []).find(m => String(m.id) === actualSid);
                           
-                          // CORREÇÃO DA TELA BRANCA: Proteção para garantir que a barra de progresso não retorne "NaN"
-                          const safePerc = (mData && mData.suggested > 0) ? Math.min(((mData?.totalStudyHours || 0) / mData.suggested) * 100, 100) : 0;
+                          if (!sub) return null; // Previne quebra de tela caso a matéria tenha sido excluída
+                          
+                          const safePerc = (mData && mData.suggested > 0) ? Math.min(((mData.totalStudyHours || 0) / mData.suggested) * 100, 100) : 0;
 
                           return (
-                            <div key={idx} className={`relative flex items-center gap-6 p-7 rounded-[32px] border transition-all flex-1 min-w-[260px] max-w-[320px] ${active ? 'bg-gradient-to-br from-blue-600 to-indigo-800 border-blue-400 text-white shadow-2xl scale-105' : 'bg-white border-slate-100'}`}>
+                            <div key={`${actualSid}-${idx}`} className={`relative flex items-center gap-6 p-7 rounded-[32px] border transition-all flex-1 min-w-[260px] max-w-[320px] ${active ? 'bg-gradient-to-br from-blue-600 to-indigo-800 border-blue-400 text-white shadow-2xl scale-105' : 'bg-white border-slate-100'}`}>
                               <div className="flex flex-col gap-2 opacity-60"><button onClick={() => moveCycleItem(idx, -1)} className="p-1 hover:bg-white/20 rounded cursor-pointer"><Icon name="arrow-up" size={14}/></button><button onClick={() => moveCycleItem(idx, 1)} className="p-1 hover:bg-white/20 rounded cursor-pointer"><Icon name="arrow-down" size={14}/></button></div>
                               <div className="flex-1 overflow-hidden">
-                                <p className={`text-[9px] font-black uppercase mb-1.5 ${active ? 'text-blue-200' : 'text-slate-400'}`}>Etapa {idx + 1}</p><h4 className="text-base font-black truncate leading-tight mb-2">{String(sub.name)}</h4>
+                                <p className={`text-[9px] font-black uppercase mb-1.5 ${active ? 'text-blue-200' : 'text-slate-400'}`}>Etapa {idx + 1}</p>
+                                <h4 className="text-base font-black truncate leading-tight mb-2">{String(sub.name || 'Desconhecida')}</h4>
                                 <div className="w-full h-1.5 bg-slate-100/20 rounded-full overflow-hidden"><div className={`h-full ${active ? 'bg-white' : 'bg-blue-500'}`} style={{ width: `${safePerc}%` }} /></div>
                               </div>
                               <div className="flex gap-2">
-                                <button onClick={() => { setSelectedSubId(sid); setActiveTab('materia'); }} className={`p-2.5 rounded-xl ${active ? 'bg-white/20 hover:bg-white/30' : 'bg-slate-50 text-slate-400 hover:text-blue-600'} cursor-pointer`}><Icon name="play-circle" size={22}/></button>
-                                <button onClick={() => setCycleSequence(cycleSequence.filter((_, i) => i !== idx))} className={`p-2.5 ${active ? 'text-blue-200 hover:text-white' : 'text-slate-300 hover:text-red-500'} cursor-pointer`}><Icon name="x" size={22}/></button>
+                                <button onClick={() => { setSelectedSubId(actualSid); setActiveTab('materia'); }} className={`p-2.5 rounded-xl ${active ? 'bg-white/20 hover:bg-white/30' : 'bg-slate-50 text-slate-400 hover:text-blue-600'} cursor-pointer`}><Icon name="play-circle" size={22}/></button>
+                                <button onClick={() => setCycleSequence((cycleSequence || []).filter((_, i) => i !== idx))} className={`p-2.5 ${active ? 'text-blue-200 hover:text-white' : 'text-slate-300 hover:text-red-500'} cursor-pointer`}><Icon name="x" size={22}/></button>
                               </div>
                             </div>
                           );
@@ -473,7 +499,7 @@
                             <tr><th className="pb-6 pr-4">Disciplina</th><th className="pb-6 text-center">Aproveitamento</th><th className="pb-6 text-center">Meta Proporcional</th><th className="pb-6 text-center">Já Estudado</th><th className="pb-6 text-right">Tempo Pendente</th></tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                            {metrics.map(m => (
+                            {(metrics || []).map(m => (
                               <tr key={m.id} className="text-sm font-bold hover:bg-slate-50/50 transition-all group">
                                 <td className="py-5 uppercase tracking-tighter text-slate-700 font-black pr-4">{String(m.name)}</td>
                                 <td className="py-5 text-center"><div className="flex flex-col items-center"><span className={`px-3 py-1.5 rounded-xl text-[11px] font-black ${m.perf >= 80 ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'}`}>{m.perf}%</span><span className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{m.totalH} / {m.totalQ}</span></div></td>
@@ -497,7 +523,7 @@
                             </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {subjects.map(s => (
+                            {(subjects || []).map(s => (
                                 <div key={s.id} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 group transition-all hover:border-blue-200 relative">
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2"><Icon name="edit-3" size={14} className="text-slate-300" /><input type="text" value={s.name} onChange={(e) => updateSubject(s.id, 'name', e.target.value)} className="bg-transparent border-none text-xs font-black uppercase outline-none focus:text-blue-600 w-full tracking-tight" /></div>
@@ -566,7 +592,7 @@
                            <div className="min-w-[600px]">
                                <div className="grid grid-cols-12 gap-4 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4"><div className="col-span-5">Assunto / Tópico</div><div className="col-span-2 text-center">Tempo</div><div className="col-span-2 text-center">Questões</div><div className="col-span-1 text-center">Acertos</div><div className="col-span-2 text-right">Aproveitamento</div></div>
                                <div className="space-y-1">
-                                 {topicStats.map((ts, idx) => {
+                                 {(topicStats || []).map((ts, idx) => {
                                    const perc = ts.q > 0 ? Math.round((ts.h / ts.q) * 100) : 0;
                                    const hasData = ts.q > 0 || ts.time > 0;
                                    return (
@@ -586,7 +612,7 @@
 
                     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col h-[260px]">
                        <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2"><Icon name="file-text" size={16}/> Observações</h3>
-                       <textarea className="flex-1 bg-slate-50 border-none rounded-2xl p-6 text-xs outline-none resize-none font-medium leading-relaxed shadow-inner" placeholder="Jurisprudência, mnemónicos e pontos de atenção..." value={String(currentSubject.notes)} onChange={(e) => updateSubject(currentSubject.id, 'notes', e.target.value)} />
+                       <textarea className="flex-1 bg-slate-50 border-none rounded-2xl p-6 text-xs outline-none resize-none font-medium leading-relaxed shadow-inner" placeholder="Jurisprudência, mnemónicos e pontos de atenção..." value={String(currentSubject.notes || '')} onChange={(e) => updateSubject(currentSubject.id, 'notes', e.target.value)} />
                     </div>
 
                     <div className="bg-white p-4 md:p-8 rounded-3xl border border-slate-200 shadow-sm min-h-[400px]">
@@ -634,9 +660,9 @@
                     </header>
                     
                     <div className="flex flex-col gap-4">
-                      {revisionList.length === 0 && <div className="p-20 text-center bg-white rounded-[40px] border border-dashed border-slate-300 text-slate-400 font-bold uppercase tracking-widest shadow-sm">Nenhuma revisão pendente no momento</div>}
+                      {(revisionList || []).length === 0 && <div className="p-20 text-center bg-white rounded-[40px] border border-dashed border-slate-300 text-slate-400 font-bold uppercase tracking-widest shadow-sm">Nenhuma revisão pendente no momento</div>}
                       
-                      {revisionList.map(rev => (
+                      {(revisionList || []).map(rev => (
                         <div key={rev.id} className="bg-white p-6 md:p-8 rounded-[40px] border border-slate-200 shadow-sm hover:shadow-xl transition-all group flex flex-col xl:flex-row xl:items-center gap-8 overflow-hidden">
                           
                           <div className="flex-1 min-w-0 w-full xl:min-w-[300px]">
@@ -650,7 +676,6 @@
                             </h4>
                           </div>
 
-                          {/* CORREÇÃO DO VAZAMENTO: Usando flex-wrap em vez de grid, assim nunca vaza da tela! */}
                           <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto bg-slate-50 p-5 rounded-[32px] border border-slate-100">
                             <div className="flex-1 min-w-[70px] space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Questões</label><input type="number" value={revForms[rev.id]?.q || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'q', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center h-12" /></div>
                             <div className="flex-1 min-w-[70px] space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 tracking-widest ml-1">Acertos</label><input type="number" value={revForms[rev.id]?.h || ''} placeholder="0" onChange={(e) => updateRevQuickForm(rev.id, 'h', e.target.value)} className="w-full bg-white p-3 rounded-xl text-xs font-bold border border-slate-200 outline-none focus:ring-1 ring-blue-400 shadow-sm text-center h-12" /></div>
