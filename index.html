@@ -23,12 +23,19 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
         const pb = new PocketBase('https://dashboard-pcpr-pocketbase.kgmk5k.easypanel.host');
         
+        // CÓDIGO DO ÍCONE BLINDADO CONTRA TELA BRANCA NO REACT
         const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => { lucide.createIcons(); });
-            return <i data-lucide={name} style={{width: size, height: size}} className={className}></i>;
+            const spanRef = useRef(null);
+            useEffect(() => {
+                if (spanRef.current) {
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}" style="width:${size}px; height:${size}px"></i>`;
+                    lucide.createIcons();
+                }
+            }, [name, className, size]);
+            return <span ref={spanRef} style={{ display: 'contents' }}></span>;
         };
 
         const DEFAULT_TOPICS = {
@@ -65,7 +72,7 @@
           { id: 'inf', name: 'Informática', weight: 5, notes: '', logs: [], history: [], customTopics: [] }
         ];
 
-        // FUNÇÃO ESCUDO: Protege contra nulos, indefinidos ou objetos malformados no banco
+        // FUNÇÃO ESCUDO
         const getSafeId = (item) => {
             if (item === null || item === undefined) return null;
             if (typeof item === 'object') return String(item.id || item.value || '');
@@ -99,7 +106,6 @@
                   if (record.subjects && Array.isArray(record.subjects)) setSubjects(record.subjects);
                   if (record.availableTime) setAvailableTime(Number(record.availableTime) || 100);
                   if (record.cycleSequence && Array.isArray(record.cycleSequence)) {
-                      // Limpa objetos fantasmas e converte tudo em IDs puros
                       const safeCycle = record.cycleSequence.map(item => getSafeId(item)).filter(Boolean);
                       setCycleSequence(safeCycle);
                   }
@@ -232,10 +238,10 @@
             setActiveModal(null);
           };
 
-          // FUNÇÃO DE ZERAR SEGURA - HARD RESET (Restaura o Direito Penal e apaga ciclos sujos)
           const handleReset = () => {
             try {
-              setSubjects(INITIAL_SUBJECTS);
+              // Recupera todas as disciplinas padrões limpas
+              setSubjects(JSON.parse(JSON.stringify(INITIAL_SUBJECTS)));
               setAvailableTime(100); 
               setCycleSequence([]); 
               setCurrentCycleIndex(0); 
@@ -374,7 +380,7 @@
 
           const currentSubject = (subjects || []).find(s => String(s.id) === String(selectedSubId));
           
-          // Verificação super segura da matéria ativa do ciclo
+          // Verificação segura da matéria ativa do ciclo
           const safeCycleArr = cycleSequence || [];
           const safeCurrentIdx = Number(currentCycleIndex) || 0;
           const cycleActiveId = getSafeId(safeCycleArr[safeCurrentIdx]);
@@ -483,7 +489,7 @@
                           const active = Number(currentCycleIndex) === idx;
                           const mData = (metrics || []).find(m => String(m.id) === actualSid);
                           
-                          if (!sub) return null; // Previne quebra de tela caso a matéria tenha sido excluída
+                          if (!sub) return null; 
                           
                           const safePerc = (mData && mData.suggested > 0) ? Math.min(((mData.totalStudyHours || 0) / mData.suggested) * 100, 100) : 0;
 
