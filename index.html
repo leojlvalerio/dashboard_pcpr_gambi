@@ -174,7 +174,6 @@
               const timeRemaining = Math.max(0, sSuggested - totalStudyHours);
               const allTopics = [...flattenTopics(s.id), ...(s.customTopics || [])];
               
-              // Nova lógica: Conta como estudado apenas se o status for "Finalizado"
               const statuses = s.topicStatuses || {};
               const unstudiedCount = allTopics.filter(t => statuses[t] !== 'Finalizado').length;
 
@@ -229,7 +228,9 @@
                     time: 0, 
                     q: 0, 
                     h: 0,
-                    status: statuses[String(t)] || 'Estudar'
+                    status: statuses[String(t)] || 'Estudar',
+                    lastStudyDateObj: null,
+                    lastStudyDateStr: '-'
                 }; 
             });
 
@@ -238,6 +239,14 @@
                 statsMap[String(log.topic)].time += Number(log.time) || 0;
                 statsMap[String(log.topic)].q += Number(log.q) || 0;
                 statsMap[String(log.topic)].h += Number(log.h) || 0;
+                
+                const dateStr = log.date || '';
+                const logDate = dateStr.includes('/') ? new Date(dateStr.split('/').reverse().join('-')) : new Date(log.timestamp || 0);
+                
+                if (!statsMap[String(log.topic)].lastStudyDateObj || logDate > statsMap[String(log.topic)].lastStudyDateObj) {
+                    statsMap[String(log.topic)].lastStudyDateObj = logDate;
+                    statsMap[String(log.topic)].lastStudyDateStr = dateStr;
+                }
               }
             });
             return Object.values(statsMap).sort((a, b) => String(a.topic).localeCompare(String(b.topic)));
@@ -297,7 +306,6 @@
             setForm({ ...form, topic: '' });
           };
 
-          // NOVA FUNÇÃO: Atualiza o status de um tópico específico
           const updateTopicStatus = (subjectId, topicName, status) => {
             setSubjects(prev => prev.map(s => {
               if (s.id === subjectId) {
@@ -628,23 +636,47 @@
                        <div className="flex items-center gap-2 mb-8"><Icon name="bar-chart" size={18} className="text-blue-600" /><h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Desempenho de Assuntos</h3></div>
                        
                        <div className="overflow-x-auto pb-4">
-                           <div className="min-w-[700px]">
-                               <div className="grid grid-cols-12 gap-4 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">
+                           <div className="min-w-[800px]">
+                               {/* CABEÇALHO ATUALIZADO (GRID DE 12 COLUNAS) */}
+                               <div className="grid grid-cols-12 gap-2 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">
                                    <div className="col-span-4">Assunto / Tópico</div>
                                    <div className="col-span-2 text-center">Status</div>
-                                   <div className="col-span-2 text-center">Tempo</div>
+                                   <div className="col-span-2 text-center">Último Estudo</div>
+                                   <div className="col-span-1 text-center">Tempo</div>
                                    <div className="col-span-1 text-center">Questões</div>
                                    <div className="col-span-1 text-center">Acertos</div>
-                                   <div className="col-span-2 text-right">Aproveitamento</div>
+                                   <div className="col-span-1 text-right">Aprov.</div>
                                </div>
                                <div className="space-y-1">
                                  {(topicStats || []).map((ts, idx) => {
                                    const perc = ts.q > 0 ? Math.round((ts.h / ts.q) * 100) : 0;
                                    const hasData = ts.q > 0 || ts.time > 0 || ts.status !== 'Estudar';
+                                   
+                                   // CÁLCULO DA COR DO ÚLTIMO ESTUDO
+                                   let dateColorClass = "text-slate-400";
+                                   if (ts.lastStudyDateObj) {
+                                       const today = new Date();
+                                       today.setHours(0,0,0,0);
+                                       const studyDate = new Date(ts.lastStudyDateObj);
+                                       studyDate.setHours(0,0,0,0);
+                                       const diffDays = Math.floor((today.getTime() - studyDate.getTime()) / (1000 * 60 * 60 * 24));
+                                       
+                                       if (diffDays > 25) {
+                                           dateColorClass = "text-red-700 font-black bg-red-100 px-2 py-1 rounded-md";
+                                       } else if (diffDays > 15) {
+                                           dateColorClass = "text-amber-600 font-black bg-amber-100 px-2 py-1 rounded-md";
+                                       } else {
+                                           dateColorClass = "text-slate-600 font-bold";
+                                       }
+                                   }
+
                                    return (
-                                     <div key={idx} className={`grid grid-cols-12 items-center gap-4 px-4 py-3 rounded-xl border transition-all ${hasData ? 'bg-slate-50/50 border-slate-100 hover:border-blue-100 hover:bg-white' : 'bg-transparent border-transparent opacity-40 hover:opacity-100'}`}>
+                                     <div key={idx} className={`grid grid-cols-12 items-center gap-2 px-4 py-3 rounded-xl border transition-all ${hasData ? 'bg-slate-50/50 border-slate-100 hover:border-blue-100 hover:bg-white' : 'bg-transparent border-transparent opacity-40 hover:opacity-100'}`}>
+                                       
+                                       {/* ASSUNTO */}
                                        <div className="col-span-4"><span className="text-[10px] font-black uppercase text-slate-700 block truncate" title={String(ts.topic)}>{String(ts.topic)}</span></div>
                                        
+                                       {/* STATUS COM "ESTUDANDO" */}
                                        <div className="col-span-2 flex justify-center">
                                             <select 
                                                 value={ts.status} 
@@ -652,19 +684,31 @@
                                                 className={`text-[9px] font-black uppercase px-2 py-1.5 rounded-lg outline-none cursor-pointer border ${
                                                     ts.status === 'Finalizado' ? 'bg-green-50 text-green-700 border-green-200' :
                                                     ts.status === 'Priorizar' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                    ts.status === 'Estudando' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                     'bg-white text-slate-600 border-slate-200'
                                                 }`}
                                             >
                                                 <option value="Estudar">Estudar</option>
+                                                <option value="Estudando">Estudando</option>
                                                 <option value="Priorizar">Priorizar</option>
                                                 <option value="Finalizado">Finalizado</option>
                                             </select>
                                        </div>
 
-                                       <div className="col-span-2 text-center"><span className="text-[10px] font-bold text-blue-600">{Number(ts.time)} <span className="text-[8px] opacity-60">min</span></span></div>
+                                       {/* ÚLTIMO ESTUDO (Cores Dinâmicas) */}
+                                       <div className="col-span-2 flex justify-center items-center">
+                                            <span className={`text-[9px] tracking-widest ${dateColorClass}`}>
+                                                {ts.lastStudyDateStr !== '-' ? ts.lastStudyDateStr : '---'}
+                                            </span>
+                                       </div>
+
+                                       {/* MÉTRICAS */}
+                                       <div className="col-span-1 text-center"><span className="text-[10px] font-bold text-blue-600">{Number(ts.time)} <span className="text-[8px] opacity-60">min</span></span></div>
                                        <div className="col-span-1 text-center text-[10px] font-black text-slate-600">{Number(ts.q)}</div>
                                        <div className="col-span-1 text-center text-[10px] font-black text-green-600">{Number(ts.h)}</div>
-                                       <div className="col-span-2 text-right"><span className={`text-[10px] font-black px-2.5 py-1 rounded-lg ring-1 ${ts.q === 0 ? 'bg-slate-100 text-slate-400 ring-slate-200' : perc >= 80 ? 'bg-green-100 text-green-700 ring-green-200' : 'bg-red-100 text-red-700 ring-red-200'}`}>{perc}%</span></div>
+                                       
+                                       {/* APROVEITAMENTO */}
+                                       <div className="col-span-1 text-right"><span className={`text-[10px] font-black px-1.5 py-1 rounded-lg ring-1 ${ts.q === 0 ? 'bg-slate-100 text-slate-400 ring-slate-200' : perc >= 80 ? 'bg-green-100 text-green-700 ring-green-200' : 'bg-red-100 text-red-700 ring-red-200'}`}>{perc}%</span></div>
                                      </div>
                                    );
                                  })}
