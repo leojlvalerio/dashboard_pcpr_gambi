@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCPR Pro - Dashboard de Estudos V6.0</title>
+    <title>PCPR Pro - Dashboard de Estudos V6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -444,6 +444,7 @@
           { id: 'med', name: 'Medicina Legal', weight: 5, notes: '', logs: [], history: [], topics: DEFAULT_TOPICS['med'], topicStatuses: {} },
           { id: 'port', name: 'Português', weight: 10, notes: '', logs: [], history: [], topics: DEFAULT_TOPICS['port'], topicStatuses: {} }
         ];
+        
         const getSafeId = (item) => {
             if (item === null || item === undefined) return null;
             if (typeof item === 'object') return String(item.id || item.value || '');
@@ -794,7 +795,7 @@
                           timestamp: Date.now(),
                           date: new Date().toLocaleDateString('pt-BR'),
                           isRevision: true, 
-                          executedRevType: rev.type, // <-- A MÁGICA DE CAPTURAR O TIPO ACONTECE AQUI
+                          executedRevType: rev.type,
                           nextRevType: formData.nextType || 'completa',
                           revisions: formData.nextDate ? [{ date: formData.nextDate, type: formData.nextType || 'completa' }] : []
                       };
@@ -1180,15 +1181,16 @@
                        
                        <div className="overflow-x-auto pb-4">
                            <div className="min-w-[800px]">
-                               <div className="grid grid-cols-12 gap-2 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">
-                                   <div className="col-span-4">Assunto / Tópico (Editável)</div>
-                                   <div className="col-span-2 text-center">Status</div>
-                                   <div className="col-span-2 text-center">Último Estudo</div>
-                                   <div className="col-span-1 text-center">Tempo</div>
-                                   <div className="col-span-1 text-center">Q / A</div>
-                                   <div className="col-span-1 text-right">Aprov.</div>
-                                   <div className="col-span-1"></div>
-                               </div>
+                                <div className="grid grid-cols-12 gap-2 px-4 pb-4 border-b border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">
+                                    <div className="col-span-4">Assunto / Tópico (Editável)</div>
+                                    <div className="col-span-2 text-center">Status</div>
+                                    <div className="col-span-2 text-center">Último Estudo</div>
+                                    <div className="col-span-1 text-center">Tempo</div>
+                                    <div className="col-span-1 text-center">Q / A</div>
+                                    <div className="col-span-1 text-right">Aprov.</div>
+                                    <div className="col-span-1"></div>
+                                </div>
+                               
                                <div className="space-y-1 max-h-[400px] overflow-y-auto pr-2 custom-scroll">
                                  {(topicStats || []).map((ts, idx) => {
                                    const perc = ts.q > 0 ? Math.round((ts.h / ts.q) * 100) : 0;
@@ -1205,12 +1207,12 @@
                                    }
 
                                    return (
-                                     <div key={idx} className="grid grid-cols-12 items-center gap-2 px-4 py-2 rounded-xl border border-slate-50 hover:bg-slate-50 transition-all">
+                                     <div key={idx} className="grid grid-cols-12 items-center gap-2 px-4 py-3 rounded-xl border border-slate-50 hover:bg-slate-50 transition-all">
                                        <div className="col-span-4 flex items-center gap-2">
                                            {isEditing ? (
-                                               <input type="text" autoFocus value={editTopicValue} onChange={e=>setEditTopicValue(e.target.value)} onBlur={()=>{handleTopicManage('edit', ts.topic, editTopicValue); setEditingTopicIdx(null);}} onKeyDown={e=>{if(e.key==='Enter') e.target.blur()}} className="w-full text-[10px] font-black uppercase border-b border-blue-400 outline-none bg-transparent" />
+                                             <input type="text" autoFocus value={editTopicValue} onChange={e=>setEditTopicValue(e.target.value)} onBlur={()=>{handleTopicManage('edit', ts.topic, editTopicValue); setEditingTopicIdx(null);}} onKeyDown={e=>{if(e.key==='Enter') e.target.blur()}} className="w-full text-[10px] font-black uppercase border-b border-blue-400 outline-none bg-transparent" />
                                            ) : (
-                                               <span onDoubleClick={()=>{setEditingTopicIdx(idx); setEditTopicValue(ts.topic);}} className="text-[10px] font-black uppercase text-slate-700 block truncate cursor-text" title={String(ts.topic)}>{String(ts.topic)}</span>
+                                             <span onDoubleClick={()=>{setEditingTopicIdx(idx); setEditTopicValue(ts.topic);}} className="text-[10px] font-black uppercase text-slate-700 block whitespace-normal break-words leading-tight cursor-text" title={String(ts.topic)}>{String(ts.topic)}</span>
                                            )}
                                        </div>
                                        <div className="col-span-2 flex justify-center">
