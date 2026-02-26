@@ -849,34 +849,7 @@
               if (s.id === subjectId) return { ...s, logs: (s.logs || []).filter(l => l.id !== logId) }; return s;
             }));
           };
-// Seu código novo colado aqui em cima:
-  const handleForceSave = async () => {
-    try {
-        const dataToSave = { subjects, cycleSequence, currentCycleIndex, goalData };
-        let record;
-        try { record = await pb.collection('estudos').getFirstListItem(''); } catch (err) {}
 
-        if (record && record.id) {
-            await pb.collection('estudos').update(record.id, dataToSave);
-        } else {
-            await pb.collection('estudos').create(dataToSave);
-        }
-        alert("✅ Ciclo salvo com sucesso no banco de dados!");
-    } catch (e) {
-        console.error("Erro ao forçar salvamento:", e);
-        alert("❌ Erro ao salvar! Verifique sua conexão.");
-    }
-  };
-
-  // O trecho que você encontrou logo abaixo:
-  const backupData = () => {
-    const data = { subjects, cycleSequence, currentCycleIndex, goalData, exportDate: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href = url; link.download = `backup_pcpr_v3.3.json`; link.click();
-    URL.revokeObjectURL(url);
-  };
-            
           const backupData = () => {
             const data = { subjects, cycleSequence, currentCycleIndex, goalData, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1110,37 +1083,27 @@
                               </div>
 
                               <div className="lg:col-span-2 bg-slate-900 p-6 rounded-2xl text-white relative flex flex-col">
-    <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-4">
-        <div><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">A Sequência da Catraca</p><p className="text-sm font-bold mt-1">Total: {cycleSequence.length} sessões</p></div>
-        
-        {/* AQUI ESTÃO OS DOIS BOTÕES AGRUPADOS */}
-        <div className="flex items-center gap-4">
-            <button onClick={handleForceSave} className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 cursor-pointer flex items-center gap-1">
-                <Icon name="save" size={12}/> Salvar
-            </button>
-            <button onClick={()=> {setCycleSequence([]); setCurrentCycleIndex(0);}} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 cursor-pointer flex items-center gap-1">
-                <Icon name="trash-2" size={12}/> Limpar
-            </button>
-        </div>
-        
-    </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scroll flex-1">
-        {cycleSequence.map((sid, idx) => {
-            const sub = subjects.find(s=> s.id === sid);
-            return (
-            <div key={`${sid}-${idx}-${Math.random()}`} className="flex items-center justify-between bg-slate-800 px-3 h-12 rounded-xl border border-slate-700">
-                <div className="flex items-center gap-3 overflow-hidden">
-                    <span className="bg-slate-900 text-slate-500 w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0">{idx+1}</span>
-                    <span className="text-xs font-bold truncate max-w-[130px]">{sub?.name || '---'}</span>
-                </div>
-                <div className="flex gap-1 shrink-0 ml-2">
-                    <button onClick={() => { const n=[...cycleSequence]; if(idx>0){ n[idx]=n[idx-1]; n[idx-1]=sid; setCycleSequence(n); } }} className="text-slate-500 hover:text-white cursor-pointer"><Icon name="arrow-up" size={14}/></button>
-                    <button onClick={() => { const n=[...cycleSequence]; if(idx<n.length-1){ n[idx]=n[idx+1]; n[idx+1]=sid; setCycleSequence(n); } }} className="text-slate-500 hover:text-white cursor-pointer"><Icon name="arrow-down" size={14}/></button>
-                    <button onClick={() => { setCycleSequence(cycleSequence.filter((_, i) => i !== idx)); }} className="text-slate-500 hover:text-red-400 ml-1 cursor-pointer"><Icon name="x" size={14}/></button>
-                </div>
-            </div>
-            )})}
-    </div>
+                                  <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-4">
+                                      <div><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">A Sequência da Catraca</p><p className="text-sm font-bold mt-1">Total: {cycleSequence.length} sessões</p></div>
+                                      <button onClick={()=> {setCycleSequence([]); setCurrentCycleIndex(0);}} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 cursor-pointer flex items-center gap-1"><Icon name="trash-2" size={12}/> Limpar</button>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scroll flex-1">
+                                      {cycleSequence.map((sid, idx) => {
+                                          const sub = subjects.find(s=> s.id === sid);
+                                          return (
+                                          <div key={`${sid}-${idx}-${Math.random()}`} className="flex items-center justify-between bg-slate-800 px-3 h-12 rounded-xl border border-slate-700">
+                                              <div className="flex items-center gap-3 overflow-hidden">
+                                                  <span className="bg-slate-900 text-slate-500 w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0">{idx+1}</span>
+                                                  <span className="text-xs font-bold truncate max-w-[130px]">{sub?.name || '---'}</span>
+                                              </div>
+                                              <div className="flex gap-1 shrink-0 ml-2">
+                                                  <button onClick={() => { const n=[...cycleSequence]; if(idx>0){ n[idx]=n[idx-1]; n[idx-1]=sid; setCycleSequence(n); } }} className="text-slate-500 hover:text-white cursor-pointer"><Icon name="arrow-up" size={14}/></button>
+                                                  <button onClick={() => { const n=[...cycleSequence]; if(idx<n.length-1){ n[idx]=n[idx+1]; n[idx+1]=sid; setCycleSequence(n); } }} className="text-slate-500 hover:text-white cursor-pointer"><Icon name="arrow-down" size={14}/></button>
+                                                  <button onClick={() => { setCycleSequence(cycleSequence.filter((_, i) => i !== idx)); }} className="text-slate-500 hover:text-red-400 ml-1 cursor-pointer"><Icon name="x" size={14}/></button>
+                                              </div>
+                                          </div>
+                                      )})}
+                                  </div>
 
                                   <div className="mt-4 pt-4 border-t border-slate-800 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">+ Adicionar sessão na fila:</span>
@@ -2736,3 +2699,5 @@
     </script>
 </body>
 </html>
+
+
