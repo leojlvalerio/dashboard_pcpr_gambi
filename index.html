@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCPR Pro - Dashboard de Estudos V3.2</title>
+    <title>PCPR Pro - Dashboard de Estudos V3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -257,12 +257,10 @@
              
              let newCycle = [];
              
-             // 1. Garante que cada matéria marcada entre PELO MENOS 1 vez.
              selectedSubs.forEach(s => {
                  newCycle.push(s.id);
              });
 
-             // 2. Distribui as vagas restantes de forma proporcional
              let remainingSlots = cycleBuilderSessions - newCycle.length;
              if (remainingSlots > 0) {
                  let fractionalParts = selectedSubs.map(s => ({
@@ -287,7 +285,6 @@
                  newCycle = newCycle.slice(0, cycleBuilderSessions);
              }
 
-             // 3. Embaralha e evita que a mesma matéria fique colada (Trava de Repetição)
              const shuffleAndFix = (arr) => {
                  for (let i = arr.length - 1; i > 0; i--) {
                      const j = Math.floor(Math.random() * (i + 1));
@@ -320,7 +317,6 @@
                      maxAttempts--;
                  }
                  
-                 // Trava final: checar as bordas (se o fim emenda com o começo)
                  if (arr.length > 1 && arr[0] === arr[arr.length - 1]) {
                      for (let j = 1; j < arr.length - 1; j++) {
                          if (arr[j] !== arr[0] && arr[j-1] !== arr[0] && arr[j+1] !== arr[0]) {
@@ -418,7 +414,8 @@
                           timestamp: Date.now(),
                           date: new Date().toLocaleDateString('pt-BR'),
                           isRevision: true, 
-                          nextRevType: rev.type, 
+                          executedRevType: rev.type, // <-- A MÁGICA DE CAPTURAR O TIPO ACONTECE AQUI
+                          nextRevType: formData.nextType || 'completa',
                           revisions: formData.nextDate ? [{ date: formData.nextDate, type: formData.nextType || 'completa' }] : []
                       };
 
@@ -455,7 +452,7 @@
             const data = { subjects, cycleSequence, currentCycleIndex, goalData, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement('a'); link.href = url; link.download = `backup_pcpr_v3.2.json`; link.click();
+            const link = document.createElement('a'); link.href = url; link.download = `backup_pcpr_v3.3.json`; link.click();
             URL.revokeObjectURL(url);
           };
 
@@ -521,7 +518,7 @@
               <aside className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex flex-row justify-around items-center z-50 h-20 md:static md:w-72 md:h-screen md:flex-col md:justify-start md:border-t-0 md:border-r md:shrink-0 overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none">
                   <div className="hidden md:flex p-8 border-b border-slate-100 items-center gap-4 w-full">
                       <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg"><Icon name="target" size={24} /></div>
-                      <div><h1 className="font-black text-xl text-blue-600 uppercase leading-none tracking-tighter">PCPR Pro</h1><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Delegado V3.2</p></div>
+                      <div><h1 className="font-black text-xl text-blue-600 uppercase leading-none tracking-tighter">PCPR Pro</h1><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Delegado V3.3</p></div>
                   </div>
                   <nav className="flex flex-row md:flex-col p-2 md:p-4 gap-2 md:space-y-2 w-full justify-around md:justify-start">
                       <button onClick={() => setActiveTab('painel')} className={`flex flex-col md:flex-row items-center gap-1 md:gap-3 p-2 md:px-5 md:py-4 rounded-2xl transition-all cursor-pointer ${activeTab === 'painel' ? 'text-blue-600 md:bg-blue-600 md:text-white md:shadow-xl font-bold' : 'text-slate-500 hover:bg-slate-50'}`}><Icon name="play-circle" size={24} className="md:w-5 md:h-5" /> <span className="text-[10px] md:text-sm font-bold uppercase md:capitalize tracking-widest mt-1 md:mt-0">Painel</span></button>
@@ -649,8 +646,6 @@
                               <h3 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2"><Icon name="flag" className="text-indigo-600"/> O Alvo (Meta)</h3>
                               <p className="text-xs font-bold text-slate-400 leading-relaxed">Defina a meta de horas e clique em iniciar. Isso zera o tempo pendente sem apagar seu histórico global.</p>
                           </div>
-                          
-                          {/* BLOCO DA META COM ALTURAS UNIFORMES (h-10) */}
                           <div className="flex flex-col sm:flex-row items-end gap-3 w-full md:w-auto">
                               <div className="space-y-1 w-full sm:w-24">
                                   <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Meta (h)</label>
@@ -690,8 +685,6 @@
                                       <div><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">A Sequência da Catraca</p><p className="text-sm font-bold mt-1">Total: {cycleSequence.length} sessões</p></div>
                                       <button onClick={()=> {setCycleSequence([]); setCurrentCycleIndex(0);}} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 cursor-pointer flex items-center gap-1"><Icon name="trash-2" size={12}/> Limpar</button>
                                   </div>
-                                  
-                                  {/* CAIXAS COM ALTURA UNIFORME (h-12) */}
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scroll flex-1">
                                       {cycleSequence.map((sid, idx) => {
                                           const sub = subjects.find(s=> s.id === sid);
@@ -710,7 +703,6 @@
                                       )})}
                                   </div>
 
-                                  {/* ADIÇÃO MANUAL DE MATÉRIA */}
                                   <div className="mt-4 pt-4 border-t border-slate-800 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">+ Adicionar sessão na fila:</span>
                                       <select onChange={(e) => { if(e.target.value) { setCycleSequence([...cycleSequence, e.target.value]); e.target.value=""; } }} className="bg-slate-800 border border-slate-700 text-white text-xs font-bold px-3 py-2.5 rounded-xl outline-none w-full sm:w-64 cursor-pointer">
@@ -866,22 +858,33 @@
                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col h-[300px]">
+                    {/* BLOCO DE OBSERVAÇÕES E HISTÓRICO EMPILHADO */}
+                    <div className="flex flex-col gap-6">
+                        {/* Observações Em Cima */}
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col min-h-[160px]">
                            <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2"><Icon name="file-text" size={16}/> Observações</h3>
-                           <textarea className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs outline-none resize-none font-medium leading-relaxed" placeholder="Jurisprudência, mnemónicos e pontos de atenção..." value={String(currentSubject.notes || '')} onChange={(e) => updateSubject(currentSubject.id, 'notes', e.target.value)} />
+                           <textarea className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs outline-none resize-none font-medium leading-relaxed" placeholder="Jurisprudência, mnemônicos e pontos de atenção..." value={String(currentSubject.notes || '')} onChange={(e) => updateSubject(currentSubject.id, 'notes', e.target.value)} />
                         </div>
 
-                        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-[300px] overflow-hidden flex flex-col">
+                        {/* Histórico Embaixo */}
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col max-h-[400px]">
                            <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2 shrink-0"><Icon name="history" size={16}/> Histórico de Registros</h3>
                            <div className="overflow-y-auto pr-2 custom-scroll flex-1">
                                <div className="space-y-2">
-                                 {(currentSubject.logs || []).slice(0, 30).map(l => (
+                                 {(currentSubject.logs || []).map(l => (
                                    <div key={l.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white transition-all">
                                      <div className="flex-1 min-w-0">
-                                        <div className="flex gap-2 items-center">
+                                        <div className="flex gap-2 items-center mb-1">
                                             <p className="text-[9px] font-black text-slate-400 uppercase">{String(l.date)}</p>
-                                            {l.isRevision && <span className="text-[8px] bg-amber-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-1"><Icon name="rotate-ccw" size={8}/> Revisão</span>}
+                                            
+                                            {/* NOVA TAG DE REVISÃO INTELIGENTE */}
+                                            {l.isRevision && (
+                                              <span className={`text-[8px] text-white px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-1 ${l.executedRevType === 'breve' ? 'bg-indigo-500' : 'bg-amber-500'}`}>
+                                                <Icon name="rotate-ccw" size={8}/> 
+                                                {l.executedRevType === 'breve' ? 'Rev. Breve' : 'Rev. Completa'}
+                                              </span>
+                                            )}
+                                            
                                         </div>
                                         <h4 className="text-[11px] font-black uppercase text-slate-700 truncate">{String(l.topic)}</h4>
                                      </div>
@@ -899,7 +902,7 @@
                   </div>
                 )}
 
-                {/* ABA REVISÕES */}
+                {/* ABA REVISÕES (NOVO FORMATO INLINE) */}
                 {activeTab === 'revisoes' && (
                   <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
                     <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
@@ -924,6 +927,8 @@
                         
                         return (
                         <div key={revKey} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 group">
+                          
+                          {/* CABEÇALHO DA REVISÃO */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                                <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${rev.daysLeft <= 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{rev.daysLeft <= 0 ? 'Vencida' : `Em ${rev.daysLeft} d`}</span>
@@ -933,6 +938,7 @@
                             <h4 className="font-black text-sm text-slate-800 truncate">{String(rev.topic)}</h4>
                           </div>
 
+                          {/* CAMPOS DE EXECUÇÃO INLINE (Tudo Opcional) */}
                           <div className="flex flex-wrap items-end gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
                              <div className="flex-1 min-w-[70px] space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 ml-1">Tempo(m)</label><input type="number" placeholder="0" value={formData.time} onChange={(e) => updateInlineForm(revKey, 'time', e.target.value)} className="w-full text-xs font-bold p-2.5 rounded-lg border border-slate-200 outline-none text-center"/></div>
                              <div className="flex-1 min-w-[70px] space-y-1"><label className="text-[8px] font-black uppercase text-slate-400 ml-1">Questões</label><input type="number" placeholder="0" value={formData.q} onChange={(e) => updateInlineForm(revKey, 'q', e.target.value)} className="w-full text-xs font-bold p-2.5 rounded-lg border border-slate-200 outline-none text-center"/></div>
