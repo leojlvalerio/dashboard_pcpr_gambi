@@ -385,7 +385,7 @@
             "Domínio da estrutura morfossintática do período: Emprego dos sinais de pontuação",
             "Domínio da estrutura morfossintática do período: Regência verbal e nominal",
             "Domínio da estrutura morfossintática do período: Relações de coordenação entre orações e entre termos da oração",
-            "Domínio da estrutura morfossintática do período: Relações de subordinação entre orações e entre termos da oração",
+            "Domínio da structure morfossintática do período: Relações de subordinação entre orações e entre termos da oração",
             "Domínio da ortografia oficial",
             "Domínio dos mecanismos de coesão textual",
             "Domínio dos mecanismos de coesão textual: Emprego de elementos de referenciação, substituição e repetição, de conectores e de outros elementos de sequenciação textual",
@@ -393,7 +393,7 @@
             "Reconhecimento de tipos e gêneros textuais",
             "Reescrita de frases e parágrafos do texto",
             "Reescrita de frases e parágrafos do texto: Reescrita de textos de diferentes gêneros e níveis de formalidade",
-            "Reescrita de frases e parágrafos do texto: Reorganização da estrutura de orações e de períodos do texto",
+            "Reescrita de frases e parágrafos do texto: Reorganização da structure de orações e de períodos do texto",
             "Reescrita de frases e parágrafos do texto: Significação das palavras",
             "Reescrita de frases e parágrafos do texto: Substituição de palavras ou de trechos de texto"
           ],
@@ -465,6 +465,9 @@
           const [form, setForm] = useState({ topic: '', time: 0, q: 0, h: 0, studyDate: new Date().toISOString().split('T')[0] });
           const [formRevs, setFormRevs] = useState([{...defaultRev}]);
           
+          // ESTADO NOVO: Controle da caixinha de avanço de ciclo
+          const [autoAdvance, setAutoAdvance] = useState(true);
+          
           const [inlineRevForms, setInlineRevForms] = useState({});
 
           const [editingTopicIdx, setEditingTopicIdx] = useState(null);
@@ -480,11 +483,9 @@
                 if (record) {
                   if (record.subjects && Array.isArray(record.subjects)) {
                       const migrated = record.subjects.map(s => {
-                          // AUTO FIX PARA O NOME "CIVIL"
                           if (s.id === 'civil' && String(s.name).toLowerCase() === 'civil') {
                               s.name = 'Direito Civil';
                           }
-
                           if (!s.topics || s.topics.length === 0) {
                               const baseTopics = DEFAULT_TOPICS[s.id] || [];
                               const custom = s.customTopics || [];
@@ -781,8 +782,8 @@
               return s;
             }));
 
-            // VERIFICA SE A MATÉRIA QUE ACABOU DE ESTUDAR É A DO CICLO E AVANÇA A CATRACA!
-            if (cycleSequence && cycleSequence.length > 0) {
+            // VERIFICA SE DEVE AVANÇAR A CATRACA
+            if (autoAdvance && cycleSequence && cycleSequence.length > 0) {
                 const currentCycleActiveId = getSafeId(cycleSequence[currentCycleIndex]);
                 if (String(id) === String(currentCycleActiveId)) {
                     advanceCycle();
@@ -791,6 +792,7 @@
 
             setForm({ topic: '', time: 0, q: 0, h: 0, studyDate: new Date().toISOString().split('T')[0] });
             setFormRevs([{...defaultRev}]);
+            setAutoAdvance(true); // Reseta o checkbox para o padrão (marcado)
           };
 
           const handleInlineRevisionSave = (rev) => {
@@ -873,7 +875,6 @@
             setActiveModal(null); 
           };
 
-          // MATÉRIAS ORDENADAS ALFABETICAMENTE
           const sortedSubjects = useMemo(() => {
               return [...(subjects || [])].sort((a, b) => String(a.name).localeCompare(String(b.name)));
           }, [subjects]);
@@ -926,7 +927,6 @@
                       </button>
 
                       <div className="hidden md:block pt-6 pb-2 px-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Matérias</div>
-                      {/* USANDO A LISTA ORDENADA AQUI */}
                       {sortedSubjects.map(s => (
                           <button key={s.id} onClick={() => { setSelectedSubId(s.id); setActiveTab('materia'); }} className={`hidden md:flex w-full text-left px-5 py-3 rounded-xl text-xs font-bold transition-all items-center justify-between cursor-pointer ${selectedSubId === s.id && activeTab === 'materia' ? 'bg-slate-100 text-slate-800 border-l-4 border-slate-600' : 'text-slate-500 hover:bg-slate-50 border-l-4 border-transparent'}`}>
                               <span className="truncate pr-2">{String(s.name)}</span>{cycleActiveId === String(s.id) && <Icon name="zap" size={12} className="text-amber-500" />}
@@ -1183,6 +1183,17 @@
                            </div>
                         </div>
                       </div>
+
+                      {/* CHECKBOX INTELIGENTE - APARECE APENAS SE A MATÉRIA FOR A VEZ DO CICLO */}
+                      {cycleActiveId === String(currentSubject.id) && (
+                          <div className="flex items-center gap-3 mt-4 bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
+                              <input type="checkbox" id="autoAdvanceCheck" checked={autoAdvance} onChange={e => setAutoAdvance(e.target.checked)} className="w-4 h-4 text-blue-600 rounded cursor-pointer border-blue-300 focus:ring-blue-500" />
+                              <label htmlFor="autoAdvanceCheck" className="text-[10px] font-black uppercase text-blue-800 tracking-widest cursor-pointer select-none">
+                                  É estudo da meta? (Avançar catraca após salvar)
+                              </label>
+                          </div>
+                      )}
+
                       <button onClick={() => registerSession(currentSubject.id)} className="w-full bg-blue-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all mt-6 cursor-pointer">Salvar no Diário de Bordo</button>
                     </div>
 
