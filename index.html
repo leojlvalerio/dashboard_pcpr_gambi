@@ -1277,7 +1277,7 @@
                     <div className="flex flex-col gap-6">
                         {/* Observações Em Cima */}
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col min-h-[160px]">
-                           <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2"><Icon name="file-text" size={16}/> Observações</h3>
+                           <h3 className="text-[25px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2"><Icon name="file-text" size={16}/> Observações</h3>
                            <textarea className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs outline-none resize-none font-medium leading-relaxed" placeholder="Lembrete de onde parou, dar ênfase no assunto X e pontos de atenção..." value={String(currentSubject.notes || '')} onChange={(e) => updateSubject(currentSubject.id, 'notes', e.target.value)} />
                         </div>
 
