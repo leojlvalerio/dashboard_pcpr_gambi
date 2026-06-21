@@ -1007,6 +1007,7 @@
                                 <th className="pb-4 pr-4">Disciplinas</th>
                                 <th className="pb-4 text-center">Questões Totais</th>
                                 <th className="pb-4 text-center">Acertos</th>
+                                <th className="pb-4 text-center">% Acerto</th>
                                 <th className="pb-4 text-center">Tempo para Bater a Meta</th>
                                 <th className="pb-4 text-right">Pendências</th>
                             </tr>
@@ -1018,6 +1019,11 @@
                                 <td className="py-4 uppercase tracking-tighter text-slate-700 font-black pr-4 text-xs">{String(m.name)}</td>
                                 <td className="py-4 text-center text-slate-800 font-bold text-xs">{m.totalQ}</td>
                                 <td className="py-4 text-center text-slate-800 font-bold text-xs">{m.totalH}</td>
+                                <td className="py-4 text-center text-xs">
+                                  <span className={`font-black px-2 py-0.5 rounded ${m.totalQ === 0 ? 'text-slate-400' : m.perf >= 80 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                                    {m.perf}%
+                                  </span>
+                                </td>
                                 <td className="py-4 text-center text-slate-800 font-bold text-xs">{m.timeRemaining > 0 ? `${m.timeRemaining.toFixed(1)}h` : 'Meta Batida!'}</td>
                                 <td className="py-4 text-right"><div className="flex flex-col items-end"><span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">{m.unstudiedCount} tópicos faltam</span></div></td>
                               </tr>
