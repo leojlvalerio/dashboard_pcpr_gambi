@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PCPR Pro - Dashboard de Estudos V6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>    
@@ -18,6 +21,21 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* MODO ESCURO */
+        html.dark { color-scheme: dark; }
+        html.dark body { background-color: #0f172a; }
+        html.dark .bg-slate-50 { background-color: #0f172a !important; }
+        html.dark .bg-white { background-color: #1e293b !important; }
+        html.dark .bg-slate-100 { background-color: #334155 !important; }
+        html.dark .border-slate-200, html.dark .border-slate-100, html.dark .border-slate-50 { border-color: #334155 !important; }
+        html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-slate-700 { color: #e2e8f0 !important; }
+        html.dark .text-slate-600, html.dark .text-slate-500, html.dark .text-slate-400 { color: #94a3b8 !important; }
+        html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.15) !important; }
+        html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.12) !important; }
+        html.dark .bg-red-50 { background-color: rgba(239,68,68,0.12) !important; }
+        html.dark .bg-green-50 { background-color: rgba(34,197,94,0.12) !important; }
+        html.dark ::-webkit-scrollbar-track { background: #1e293b; }
     </style>
 </head>
 <body class="bg-slate-50">
@@ -475,6 +493,26 @@
           const [newTopicValue, setNewTopicValue] = useState('');
           const [selectedToCycle, setSelectedToCycle] = useState({});
           const [cycleBuilderSessions, setCycleBuilderSessions] = useState(20);
+
+          const [darkMode, setDarkMode] = useState(() => {
+              try { return localStorage.getItem('pcprDarkMode') === 'true'; } catch(e) { return false; }
+          });
+          const [showBackupReminder, setShowBackupReminder] = useState(false);
+
+          useEffect(() => {
+              document.documentElement.classList.toggle('dark', darkMode);
+              try { localStorage.setItem('pcprDarkMode', String(darkMode)); } catch(e) {}
+          }, [darkMode]);
+
+          useEffect(() => {
+              try {
+                  const lastBackup = localStorage.getItem('pcprLastBackup');
+                  const now = Date.now();
+                  if (!lastBackup || (now - Number(lastBackup)) > 7 * 24 * 60 * 60 * 1000) {
+                      setShowBackupReminder(true);
+                  }
+              } catch(e) {}
+          }, []);
           
           useEffect(() => {
             async function loadData() {
@@ -619,6 +657,109 @@
             });
             return Object.values(statsMap).sort((a, b) => String(a.topic).localeCompare(String(b.topic)));
           }, [subjects, selectedSubId]);
+
+          const streakData = useMemo(() => {
+              const dateSet = new Set();
+              (subjects || []).forEach(s => {
+                  (s.logs || []).forEach(l => { if (l.date) dateSet.add(l.date); });
+              });
+              const oneDay = 24 * 60 * 60 * 1000;
+              const dayTimes = new Set();
+              dateSet.forEach(d => {
+                  const [day, month, year] = d.split('/').map(Number);
+                  if (year) dayTimes.add(new Date(year, month - 1, day).getTime());
+              });
+              if (dayTimes.size === 0) return { current: 0, best: 0 };
+
+              const today = new Date(); today.setHours(0,0,0,0);
+              let current = 0;
+              let cursor = today.getTime();
+              if (!dayTimes.has(cursor)) cursor -= oneDay;
+              while (dayTimes.has(cursor)) { current++; cursor -= oneDay; }
+
+              const sortedAsc = Array.from(dayTimes).sort((a,b) => a - b);
+              let best = 0, run = 0, prev = null;
+              sortedAsc.forEach(d => {
+                  run = (prev !== null && d - prev === oneDay) ? run + 1 : 1;
+                  if (run > best) best = run;
+                  prev = d;
+              });
+              return { current, best };
+          }, [subjects]);
+
+          const daysToExam = useMemo(() => {
+              if (!goalData.targetDate) return null;
+              const [year, month, day] = goalData.targetDate.split('-').map(Number);
+              if (!year) return null;
+              const examDate = new Date(year, month - 1, day); examDate.setHours(0,0,0,0);
+              const today = new Date(); today.setHours(0,0,0,0);
+              return Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          }, [goalData.targetDate]);
+
+          const weekComparison = useMemo(() => {
+              const now = Date.now();
+              const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+              const fourteenDaysAgo = now - 14 * 24 * 60 * 60 * 1000;
+              let thisWeek = 0, lastWeek = 0;
+              (subjects || []).forEach(s => {
+                  (s.logs || []).forEach(l => {
+                      const t = l.timestamp || 0;
+                      const h = (Number(l.time) || 0) / 60;
+                      if (t >= sevenDaysAgo) thisWeek += h;
+                      else if (t >= fourteenDaysAgo) lastWeek += h;
+                  });
+              });
+              return { thisWeek, lastWeek, diff: thisWeek - lastWeek };
+          }, [subjects]);
+
+          const subjectAlerts = useMemo(() => {
+              const alerts = {};
+              const today = new Date(); today.setHours(0,0,0,0);
+              (subjects || []).forEach(s => {
+                  let flag = false;
+                  const statuses = s.topicStatuses || {};
+                  if (Object.values(statuses).includes('Priorizar')) flag = true;
+                  if (!flag) {
+                      const lastStudy = {};
+                      (s.logs || []).forEach(l => {
+                          const dateStr = l.date || '';
+                          const logDate = dateStr.includes('/') ? new Date(dateStr.split('/').reverse().join('-')) : new Date(l.timestamp || 0);
+                          if (!lastStudy[l.topic] || logDate > lastStudy[l.topic]) lastStudy[l.topic] = logDate;
+                      });
+                      (s.topics || []).forEach(t => {
+                          const st = statuses[t] || 'Estudar';
+                          if (st === 'Finalizado' || st === 'Não Estudar') return;
+                          const ld = lastStudy[t];
+                          if (ld) {
+                              const diffDays = Math.floor((today.getTime() - new Date(ld).setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
+                              if (diffDays > 25) flag = true;
+                          }
+                      });
+                  }
+                  alerts[s.id] = flag;
+              });
+              return alerts;
+          }, [subjects]);
+
+          const accuracyTrend = useMemo(() => {
+              const now = new Date(); now.setHours(23,59,59,999);
+              const weeks = [];
+              for (let i = 7; i >= 0; i--) {
+                  const weekEnd = new Date(now); weekEnd.setDate(now.getDate() - i * 7);
+                  const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6); weekStart.setHours(0,0,0,0);
+                  weeks.push({ start: weekStart.getTime(), end: weekEnd.getTime(), label: `${weekStart.getDate()}/${weekStart.getMonth()+1}` });
+              }
+              return weeks.map(w => {
+                  let q = 0, h = 0;
+                  (subjects || []).forEach(s => {
+                      (s.logs || []).forEach(l => {
+                          const t = l.timestamp || 0;
+                          if (t >= w.start && t <= w.end) { q += Number(l.q) || 0; h += Number(l.h) || 0; }
+                      });
+                  });
+                  return { label: w.label, perc: q > 0 ? Math.round((h / q) * 100) : null, q };
+              });
+          }, [subjects]);
 
           const handleAddSubject = (name) => {
             if (!name?.trim()) return;
@@ -851,6 +992,12 @@
             URL.revokeObjectURL(url);
           };
 
+          const handleBackupClick = () => {
+              backupData();
+              try { localStorage.setItem('pcprLastBackup', String(Date.now())); } catch(e) {}
+              setShowBackupReminder(false);
+          };
+
           const handleRestoreBackup = (e) => {
               const file = e.target.files[0];
               if(!file) return;
@@ -887,6 +1034,11 @@
           return (
             <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans relative overflow-x-hidden">
               
+              {/* TOGGLE MODO ESCURO */}
+              <button onClick={() => setDarkMode(!darkMode)} className="fixed top-4 right-4 z-[60] bg-white border border-slate-200 shadow-lg p-3 rounded-full text-slate-500 hover:text-blue-600 cursor-pointer transition-all" title={darkMode ? 'Modo claro' : 'Modo escuro'}>
+                  <Icon name={darkMode ? 'sun' : 'moon'} size={18} />
+              </button>
+
               {/* MODAIS */}
               {activeModal === 'add' && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
@@ -929,7 +1081,11 @@
                       <div className="hidden md:block pt-6 pb-2 px-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Matérias</div>
                       {sortedSubjects.map(s => (
                           <button key={s.id} onClick={() => { setSelectedSubId(s.id); setActiveTab('materia'); }} className={`hidden md:flex w-full text-left px-5 py-3 rounded-xl text-xs font-bold transition-all items-center justify-between cursor-pointer ${selectedSubId === s.id && activeTab === 'materia' ? 'bg-slate-100 text-slate-800 border-l-4 border-slate-600' : 'text-slate-500 hover:bg-slate-50 border-l-4 border-transparent'}`}>
-                              <span className="truncate pr-2">{String(s.name)}</span>{cycleActiveId === String(s.id) && <Icon name="zap" size={12} className="text-amber-500" />}
+                              <span className="truncate pr-2 flex items-center gap-2">
+                                  {subjectAlerts[s.id] && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" title="Matéria precisa de atenção"></span>}
+                                  {String(s.name)}
+                              </span>
+                              {cycleActiveId === String(s.id) && <Icon name="zap" size={12} className="text-amber-500 shrink-0" />}
                           </button>
                       ))}
                   </nav>
@@ -940,6 +1096,26 @@
                 {/* ABA PAINEL (EXECUÇÃO) */}
                 {activeTab === 'painel' && (
                   <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
+                    {showBackupReminder && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <Icon name="shield-alert" className="text-amber-500 shrink-0" size={20} />
+                                <p className="text-xs font-bold text-amber-800">Já faz mais de 7 dias desde o seu último backup. Que tal baixar um agora para garantir seus dados?</p>
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                                <button onClick={handleBackupClick} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest cursor-pointer">Baixar Backup</button>
+                                <button onClick={() => setShowBackupReminder(false)} className="bg-white text-amber-600 border border-amber-200 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest cursor-pointer">Depois</button>
+                            </div>
+                        </div>
+                    )}
+                    {daysToExam !== null && (
+                        <div className={`rounded-2xl p-4 flex items-center gap-3 ${daysToExam <= 0 ? 'bg-red-50 border border-red-200' : daysToExam <= 30 ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-100'}`}>
+                            <Icon name="calendar-clock" className={daysToExam <= 0 ? 'text-red-600' : daysToExam <= 30 ? 'text-amber-600' : 'text-blue-600'} size={20} />
+                            <p className={`text-xs font-black uppercase tracking-widest ${daysToExam <= 0 ? 'text-red-700' : daysToExam <= 30 ? 'text-amber-700' : 'text-blue-700'}`}>
+                                {daysToExam <= 0 ? 'A data da prova já chegou ou passou!' : `Faltam ${daysToExam} dias para a prova`}
+                            </p>
+                        </div>
+                    )}
                     {cycleSequence.length > 0 ? (
                         <div className="bg-white rounded-[32px] md:rounded-[40px] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
                             <div className="bg-gradient-to-br from-blue-700 to-indigo-900 p-8 md:p-12 text-white relative">
@@ -984,7 +1160,7 @@
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
                         <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estudado (Nova Meta)</p><p className="text-4xl font-black mt-1 text-slate-800">{stats.totalHoursGoal.toFixed(1)}h</p></div>
                         <div className="w-full h-2 bg-slate-100 rounded-full mt-4 overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${Math.min((stats.totalHoursGoal / (goalData.totalHours || 1)) * 100, 100)}%` }} /></div>
@@ -995,6 +1171,42 @@
                       </div>
                       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center text-center">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Aproveitamento Global</p><p className="text-4xl font-black text-green-600 tracking-tighter">{Math.round(stats.accuracy)}%</p><p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">{stats.hTotal} / {stats.qTotal} questões</p>
+                      </div>
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center text-center">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-center gap-1"><Icon name="flame" size={12} className="text-orange-500"/> Sequência</p>
+                        <p className="text-4xl font-black text-orange-500 tracking-tighter">{streakData.current}</p>
+                        <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">dias seguidos {streakData.best > streakData.current ? `(recorde: ${streakData.best})` : ''}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Esta Semana x Semana Passada</p>
+                        <div className="flex items-end gap-4">
+                          <div>
+                            <p className="text-3xl font-black text-slate-800">{weekComparison.thisWeek.toFixed(1)}h</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Esta semana</p>
+                          </div>
+                          <div className={`flex items-center gap-1 mb-1 text-xs font-black ${weekComparison.diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <Icon name={weekComparison.diff >= 0 ? 'trending-up' : 'trending-down'} size={14} />
+                            {weekComparison.diff >= 0 ? '+' : ''}{weekComparison.diff.toFixed(1)}h
+                          </div>
+                        </div>
+                        <p className="text-[9px] font-bold text-slate-400 mt-2">Semana passada: {weekComparison.lastWeek.toFixed(1)}h</p>
+                      </div>
+                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Evolução do Aproveitamento (8 semanas)</p>
+                        <div className="flex items-end gap-1.5 h-20">
+                          {accuracyTrend.map((w, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1 group relative">
+                              <div className={`w-full rounded-t ${w.perc === null ? 'bg-slate-100' : w.perc >= 80 ? 'bg-green-400' : w.perc >= 50 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ height: w.perc === null ? '4px' : `${Math.max(w.perc, 6)}%` }} title={`${w.label}: ${w.perc === null ? 'sem dados' : w.perc + '%'}`}></div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-between mt-2">
+                          <span className="text-[8px] font-bold text-slate-400">{accuracyTrend[0]?.label}</span>
+                          <span className="text-[8px] font-bold text-slate-400">{accuracyTrend[accuracyTrend.length-1]?.label}</span>
+                        </div>
                       </div>
                     </div>
 
