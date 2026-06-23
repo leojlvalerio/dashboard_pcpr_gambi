@@ -503,6 +503,7 @@
           const [darkMode, setDarkMode] = useState(() => {
               try { return localStorage.getItem('pcprDarkMode') === 'true'; } catch(e) { return false; }
           });
+          const dataLoaded = useRef(false);
 
           useEffect(() => {
               document.documentElement.classList.toggle('dark', darkMode);
@@ -551,11 +552,15 @@
                   if (record.currentCycleIndex !== undefined) setCurrentCycleIndex(Number(record.currentCycleIndex) || 0);
                 }
               } catch (e) { console.log("Sem dados na VPS ainda."); }
+              // Libera o salvamento somente após o carregamento ter terminado
+              dataLoaded.current = true;
             }
             loadData();
           }, []);
 
           useEffect(() => {
+            // TRAVA DE SEGURANÇA: não salva enquanto o carregamento inicial não terminou
+            if (!dataLoaded.current) return;
             const saveData = async () => {
               try {
                 // Embute goalData dentro do subjects como item especial
